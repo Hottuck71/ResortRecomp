@@ -1,0 +1,44 @@
+# Walks through the opening screens, presses Dive!, then A and B at the title.
+600 A
+620 -
+1300 - ptr 0 0.45
+1700 A ptr 0 0.45
+1720 - ptr 0 0.45
+2000 A ptr 0 0.45
+2020 - ptr 0 0.45
+2300 A ptr 0 0.45
+2320 - ptr 0 0.45
+2600 A ptr 0 0.45
+2620 - ptr 0 0.45
+2900 A ptr 0 0.45
+2920 - ptr 0 0.45
+3200 A ptr 0 0.45
+3220 - ptr 0 0.45
+3500 A+B ptr 0 0.45
+3520 - ptr 0 0.45
+3900 A+B ptr 0 0.45
+3920 - ptr 0 0.45
+4300 A+B ptr 0 0.45
+4320 - ptr 0 0.45
+4700 A+B ptr 0 0.45
+4720 - ptr 0 0.45
+5100 A+B ptr 0 0.45
+5120 - ptr 0 0.45
+5500 A+B ptr 0 0.45
+5520 - ptr 0 0.45
+5900 A+B ptr 0 0.45
+5920 - ptr 0 0.45
+6300 A+B ptr 0 0.45
+6320 - ptr 0 0.45
+6700 A+B ptr 0 0.45
+6720 - ptr 0 0.45
+7100 A+B ptr 0 0.45
+7120 - ptr 0 0.45
+7500 A+B ptr 0 0.45
+7520 - ptr 0 0.45
+7900 A+B ptr 0 0.45
+7920 - ptr 0 0.45
+8300 A+B ptr 0 0.45
+8320 - ptr 0 0.45
+8700 A+B ptr 0 0.45
+8720 - ptr 0 0.45

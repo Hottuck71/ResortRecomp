@@ -1,0 +1,8 @@
+# Title screen to the sport menu, then waits there. For finding menu positions.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr 0 0.30

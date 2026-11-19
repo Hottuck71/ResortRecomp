@@ -1,0 +1,204 @@
+# cycling with the stand-in Nunchuk: Road Race (top), description, a row of 1 and 2 players, the Mii confirm, then 1-Stage Race and Around the Island.
+# Each click hovers for 200 fields before A, as the game needs the pointer over a button first.
+# Two-entry mode lists: the top entry is centred at y 0.17 (Table Tennis has three, top at 0.05).
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr 0.091 0.599
+2800 A ptr 0.091 0.599
+2820 - ptr 0 0.30 plug 1
+3300 - ptr 0 0.17
+3500 A ptr 0 0.17
+3520 - ptr 0 0.17
+4100 - ptr 0.334 0.708
+4300 A ptr 0.334 0.708
+4320 - ptr 0.334 0.708
+5500 - ptr -0.279 0.32
+5700 A ptr -0.279 0.32
+5720 - ptr -0.279 0.32
+6700 - ptr 0.244 0.717
+6900 A ptr 0.244 0.717
+6920 - ptr 0.244 0.717
+7900 - ptr 0.035 0.0
+8100 A ptr 0.035 0.0
+8120 - ptr 0.035 0.0
+8700 - ptr -0.174 -0.01
+8900 A ptr -0.174 -0.01
+8920 - ptr -0.174 -0.01
+9500 - ptr 0.334 0.708
+9700 A ptr 0.334 0.708
+9720 - ptr 0.334 0.708
+10300 - ptr 0.334 0.708
+10500 A ptr 0.334 0.708
+10520 - ptr 0.334 0.708
+11100 A+Z ptr 0 0.30 nun 0 1
+11160 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+11220 - ptr 0 0.30 nun 0 1
+11300 - ptr 0 0.30
+11400 A+Z ptr 0 0.30 nun 0 1
+11460 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+11520 - ptr 0 0.30 nun 0 1
+11600 - ptr 0 0.30
+11700 A+Z ptr 0 0.30 nun 0 1
+11760 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+11820 - ptr 0 0.30 nun 0 1
+11900 - ptr 0 0.30
+12000 A+Z ptr 0 0.30 nun 0 1
+12060 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+12120 - ptr 0 0.30 nun 0 1
+12200 - ptr 0 0.30
+12300 A+Z ptr 0 0.30 nun 0 1
+12360 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+12420 - ptr 0 0.30 nun 0 1
+12500 - ptr 0 0.30
+12600 A+Z ptr 0 0.30 nun 0 1
+12660 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+12720 - ptr 0 0.30 nun 0 1
+12800 - ptr 0 0.30
+12900 A+Z ptr 0 0.30 nun 0 1
+12960 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+13020 - ptr 0 0.30 nun 0 1
+13100 - ptr 0 0.30
+13200 A+Z ptr 0 0.30 nun 0 1
+13260 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+13320 - ptr 0 0.30 nun 0 1
+13400 - ptr 0 0.30
+13500 A+Z ptr 0 0.30 nun 0 1
+13560 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+13620 - ptr 0 0.30 nun 0 1
+13700 - ptr 0 0.30
+13800 A+Z ptr 0 0.30 nun 0 1
+13860 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+13920 - ptr 0 0.30 nun 0 1
+14000 - ptr 0 0.30
+14100 A+Z ptr 0 0.30 nun 0 1
+14160 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+14220 - ptr 0 0.30 nun 0 1
+14300 - ptr 0 0.30
+14400 A+Z ptr 0 0.30 nun 0 1
+14460 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+14520 - ptr 0 0.30 nun 0 1
+14600 - ptr 0 0.30
+14700 A+Z ptr 0 0.30 nun 0 1
+14760 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+14820 - ptr 0 0.30 nun 0 1
+14900 - ptr 0 0.30
+15000 A+Z ptr 0 0.30 nun 0 1
+15060 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+15120 - ptr 0 0.30 nun 0 1
+15200 - ptr 0 0.30
+15300 A+Z ptr 0 0.30 nun 0 1
+15360 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+15420 - ptr 0 0.30 nun 0 1
+15500 - ptr 0 0.30
+15600 A+Z ptr 0 0.30 nun 0 1
+15660 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+15720 - ptr 0 0.30 nun 0 1
+15800 - ptr 0 0.30
+15900 A+Z ptr 0 0.30 nun 0 1
+15960 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+16020 - ptr 0 0.30 nun 0 1
+16100 - ptr 0 0.30
+16200 A+Z ptr 0 0.30 nun 0 1
+16260 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+16320 - ptr 0 0.30 nun 0 1
+16400 - ptr 0 0.30
+16500 A+Z ptr 0 0.30 nun 0 1
+16560 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+16620 - ptr 0 0.30 nun 0 1
+16700 - ptr 0 0.30
+16800 A+Z ptr 0 0.30 nun 0 1
+16860 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+16920 - ptr 0 0.30 nun 0 1
+17000 - ptr 0 0.30
+17100 A+Z ptr 0 0.30 nun 0 1
+17160 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+17220 - ptr 0 0.30 nun 0 1
+17300 - ptr 0 0.30
+17400 A+Z ptr 0 0.30 nun 0 1
+17460 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+17520 - ptr 0 0.30 nun 0 1
+17600 - ptr 0 0.30
+17700 A+Z ptr 0 0.30 nun 0 1
+17760 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+17820 - ptr 0 0.30 nun 0 1
+17900 - ptr 0 0.30
+18000 A+Z ptr 0 0.30 nun 0 1
+18060 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+18120 - ptr 0 0.30 nun 0 1
+18200 - ptr 0 0.30
+18300 A+Z ptr 0 0.30 nun 0 1
+18360 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+18420 - ptr 0 0.30 nun 0 1
+18500 - ptr 0 0.30
+18600 A+Z ptr 0 0.30 nun 0 1
+18660 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+18720 - ptr 0 0.30 nun 0 1
+18800 - ptr 0 0.30
+18900 A+Z ptr 0 0.30 nun 0 1
+18960 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+19020 - ptr 0 0.30 nun 0 1
+19100 - ptr 0 0.30
+19200 A+Z ptr 0 0.30 nun 0 1
+19260 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+19320 - ptr 0 0.30 nun 0 1
+19400 - ptr 0 0.30
+19500 A+Z ptr 0 0.30 nun 0 1
+19560 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+19620 - ptr 0 0.30 nun 0 1
+19700 - ptr 0 0.30
+19800 A+Z ptr 0 0.30 nun 0 1
+19860 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+19920 - ptr 0 0.30 nun 0 1
+20000 - ptr 0 0.30
+20100 A+Z ptr 0 0.30 nun 0 1
+20160 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+20220 - ptr 0 0.30 nun 0 1
+20300 - ptr 0 0.30
+20400 A+Z ptr 0 0.30 nun 0 1
+20460 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+20520 - ptr 0 0.30 nun 0 1
+20600 - ptr 0 0.30
+20700 A+Z ptr 0 0.30 nun 0 1
+20760 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+20820 - ptr 0 0.30 nun 0 1
+20900 - ptr 0 0.30
+21000 A+Z ptr 0 0.30 nun 0 1
+21060 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+21120 - ptr 0 0.30 nun 0 1
+21200 - ptr 0 0.30
+21300 A+Z ptr 0 0.30 nun 0 1
+21360 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+21420 - ptr 0 0.30 nun 0 1
+21500 - ptr 0 0.30
+21600 A+Z ptr 0 0.30 nun 0 1
+21660 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+21720 - ptr 0 0.30 nun 0 1
+21800 - ptr 0 0.30
+21900 A+Z ptr 0 0.30 nun 0 1
+21960 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+22020 - ptr 0 0.30 nun 0 1
+22100 - ptr 0 0.30
+22200 A+Z ptr 0 0.30 nun 0 1
+22260 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+22320 - ptr 0 0.30 nun 0 1
+22400 - ptr 0 0.30
+22500 A+Z ptr 0 0.30 nun 0 1
+22560 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+22620 - ptr 0 0.30 nun 0 1
+22700 - ptr 0 0.30
+22800 A+Z ptr 0 0.30 nun 0 1
+22860 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+22920 - ptr 0 0.30 nun 0 1
+23000 - ptr 0 0.30
+23100 A+Z ptr 0 0.30 nun 0 1
+23160 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+23220 - ptr 0 0.30 nun 0 1
+23300 - ptr 0 0.30
+23400 A+Z ptr 0 0.30 nun 0 1
+23460 A+Z ptr 0 0.30 swing 1 nswing 1 nun 0 1
+23520 - ptr 0 0.30 nun 0 1
+23600 - ptr 0 0.30

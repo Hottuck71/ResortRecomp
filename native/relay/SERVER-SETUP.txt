@@ -1,0 +1,201 @@
+RUNNING YOUR OWN ONLINE SERVER (RELAY)
+Wii Sports Resort native PC build, by Lane Carle (crazyman12)
+=====================================================================
+
+WHAT THIS IS
+------------
+Online play works best through a small "relay" server. Everyone's game
+connects OUT to the relay, and the relay passes the data between players.
+That way only ONE port has to be opened, on the relay's computer, instead
+of every host forwarding ports on their own router.
+
+The relay is tiny: it uses almost no processor or memory, stores nothing,
+and never looks inside the game's data. You can run it on:
+
+  A. An Ubuntu (Linux) computer or server, such as a Raspberry Pi, or
+  B. A Windows 10 or 11 PC (it can be the same PC you play on).
+
+It uses ONE port: TCP 51020 (you can pick another, see "Using a different
+port" below). Only TCP is used, never UDP.
+
+
+=====================================================================
+A. UBUNTU SERVER
+=====================================================================
+
+1. Copy two files to the server
+   From the "relay" folder: wsr_relay.c and wsr-relay.service
+   From Windows, in PowerShell (change you@192.168.1.50 to your login
+   and your server's address):
+
+     scp wsr_relay.c wsr-relay.service you@192.168.1.50:~
+
+   (A USB stick or any other way of copying works too.)
+
+2. Log in to the server
+     ssh you@192.168.1.50
+
+3. Check for a C compiler
+     gcc --version
+
+   If it prints a version, go to step 4. If it says "command not found",
+   install Ubuntu's standard build tools:
+     sudo apt update
+     sudo apt install build-essential
+   then run "gcc --version" again.
+
+4. Build the relay
+     gcc -O2 -Wall -o wsr_relay wsr_relay.c
+   No output means it worked.
+
+5. Try it once
+     ./wsr_relay 51020
+   It should say: wsr_relay listening on TCP port 51020 at 0.0.0.0
+   Press Ctrl+C to stop it.
+
+6. Open the port on the server's firewall (only if it's on)
+     sudo ufw status
+   If it says "active":
+     sudo ufw allow 51020/tcp
+   If it says "inactive", skip this.
+
+7. Make it start by itself whenever the server starts
+     sudo mkdir -p /opt/wsr-relay
+     sudo cp wsr_relay /opt/wsr-relay/
+     sudo cp wsr-relay.service /etc/systemd/system/
+     sudo systemctl daemon-reload
+     sudo systemctl enable --now wsr-relay
+
+   Check it's running:
+     systemctl status wsr-relay
+   It should say "active (running)". Press q to leave.
+
+8. Forward the port on your router (see "ROUTER" below), using the
+   server's address. Find the server's address with:
+     hostname -I
+   (the first number, like 192.168.1.50)
+
+9. Find your public address for friends (see "ADDRESSES" below):
+     curl -4 ifconfig.me
+
+To watch players join while you play:
+     journalctl -u wsr-relay -f
+(Ctrl+C to stop watching; the relay keeps running.)
+
+To update the relay later: copy the new wsr_relay.c, build it again
+(step 4), then:
+     sudo cp wsr_relay /opt/wsr-relay/ && sudo systemctl restart wsr-relay
+
+
+=====================================================================
+B. WINDOWS 10 OR 11 PC
+=====================================================================
+
+1. In the "relay" folder, double-click wsr_relay.exe
+   A black window opens and says:
+     wsr_relay listening on TCP port 51020 at 0.0.0.0
+   Leave this window open: the relay runs as long as it's open.
+   (Windows may say it protected your PC: click "More info", then
+   "Run anyway". The program is signed by Lane Carle (crazyman12).)
+
+2. Let it through Windows Firewall
+   Windows usually asks the first time. Tick "Private networks" and click
+   "Allow access".
+   If it didn't ask, or friends can't connect: open PowerShell as
+   administrator (right-click Start, "Terminal (Admin)") and run:
+     New-NetFirewallRule -DisplayName "Wii Sports Resort relay" -Direction Inbound -Protocol TCP -LocalPort 51020 -Action Allow
+
+3. Find this PC's address on your home network
+   Press Win+R, type cmd, press Enter, then type:
+     ipconfig
+   Look for "IPv4 Address", for example 192.168.1.119.
+
+4. Forward the port on your router (see "ROUTER" below) to that address.
+
+5. Find your public address for friends (see "ADDRESSES" below).
+
+Start it with Windows (optional):
+   Press Win+R, type  shell:startup  and press Enter. A folder opens.
+   Right-click wsr_relay.exe, choose "Show more options" (Windows 11),
+   then "Create shortcut", and move the shortcut into that folder.
+   The relay now starts each time you sign in.
+
+Tip: give the PC a fixed address on your network (most routers call this
+"DHCP reservation" or "static lease"), so the port forward keeps working.
+
+
+=====================================================================
+ROUTER (needed for both)
+=====================================================================
+Open your router's settings page (often http://192.168.1.1 or
+http://192.168.0.1; the address and login are usually on a sticker on the
+router). Find "Port Forwarding" (sometimes under "Advanced", "NAT", or
+"Virtual Server") and add:
+
+   Protocol:       TCP
+   External port:  51020
+   Internal port:  51020
+   Device / IP:    the relay computer's address from above
+
+Save it. Every router looks different; searching the web for your
+router's model plus "port forward" usually finds a guide.
+
+
+=====================================================================
+ADDRESSES: WHAT EVERYONE TYPES IN THE LAUNCHER
+=====================================================================
+In the launcher's Online tab, in "Relay server":
+
+  * Friends outside your home: your PUBLIC address, the number a
+    "what is my IP" website shows when you visit it from home
+    (for example 73.45.120.18).
+  * You, and anyone on the same home network as the relay: the relay
+    computer's HOME address (for example 192.168.1.50). Many routers
+    can't loop back to their own public address from inside.
+
+Then the host presses Host and reads out the 6-character room code, and
+the others type it under "Join a room" and press Join.
+
+Your public address can change from time to time. If friends suddenly
+can't connect, check it again.
+
+
+=====================================================================
+USING A DIFFERENT PORT
+=====================================================================
+Put the port number after the program:
+   Ubuntu:   ./wsr_relay 51030
+             (and change 51020 in /etc/systemd/system/wsr-relay.service,
+             then: sudo systemctl daemon-reload && sudo systemctl restart wsr-relay)
+   Windows:  make a shortcut to wsr_relay.exe and add  51030  at the end of
+             its "Target" box.
+Forward that port instead, and everyone types the address with the port,
+for example  73.45.120.18:51030
+
+
+=====================================================================
+IF SOMETHING DOESN'T WORK
+=====================================================================
+The game shows a small window that says what went wrong:
+
+  "Couldn't reach the relay server"
+      - The relay isn't running (check its window, or
+        "systemctl status wsr-relay" on Ubuntu).
+      - The port isn't forwarded, or the firewall blocks it.
+      - The address is wrong. From inside your home, use the relay's
+        home address (192.168.x.x), not the public one.
+      - Your internet provider may not give you a public address of your
+        own ("carrier-grade NAT"). Check: if your router's status page shows
+        an internet/WAN address different from what a "what is my IP" site
+        shows (often starting with 100.64 to 100.127), port forwarding can't
+        work. A small rented server (VPS) running Ubuntu avoids that.
+
+  "There's no room with that code"
+      - A typo, or the host closed their waiting window. The host gets a
+        new code each time.
+
+  "The host has a different build"
+      - Everyone needs the exact same copy of the game folder. Share the
+        same zip with everyone.
+
+Nobody else needs to forward anything: only the relay computer.

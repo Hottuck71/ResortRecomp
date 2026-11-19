@@ -1,0 +1,8 @@
+How this project uses My Avatar Editor (see License.txt and README.txt, which are the original files)
+
+- myavatarcharacter.swf and myavatareditor.swf are copied unchanged from the 1.0.5.0 source download
+  (bin/ folder). scripts/59_export_mii_art.py reads them and writes the art into native/launcher/mii_art.cpp.
+- native/launcher/mii_render.cpp follows the placement, palettes, and lookup tables of
+  src/com/myavatareditor/fla/character/AvatarCharacter.as and AvatarBody.as.
+- The build copies License.txt to exports/native-build/licenses/MyAvatarEditor.txt, and the launcher's Mii Maker
+  credits the art on its list page.

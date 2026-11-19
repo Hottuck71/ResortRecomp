@@ -1,0 +1,13 @@
+# Probe: title screen into archery with the stand-in Nunchuk plugged in; steps to see each screen.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr 0.274 -0.149
+2800 A ptr 0.274 -0.149
+2820 - ptr 0 0.30 plug 1
+3900 A ptr 0.334 0.708
+3920 - ptr 0.334 0.708
+4500 - ptr -0.296 0.06

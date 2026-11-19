@@ -1,0 +1,285 @@
+# Like to-pingpong.txt, but each serve tries a later swing, to find one that hits the ball and ends a point.
+# A tosses the ball. It peaks about 40 fields later and reaches paddle height at about 70 to 85.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr -0.09 0.236
+2800 A ptr -0.09 0.236
+2820 - ptr -0.09 0.236
+3400 A ptr 0 0.30
+3420 - ptr 0 0.30
+3800 A ptr 0 0.30
+3820 - ptr 0 0.30
+4400 - ptr -0.29 0.27
+4600 A ptr -0.29 0.27
+4620 - ptr 0 0.30
+5100 A ptr 0 0.30
+5120 - ptr 0 0.30
+5500 A ptr 0 0.30
+5520 - ptr 0 0.30
+6000 - ptr 0.167 0.836
+6200 A ptr 0.167 0.836
+6220 - ptr 0 0.30
+6500 - ptr 0.206 0.33
+6700 A ptr 0.206 0.33
+6720 - ptr 0 0.30
+7300 - ptr 0.206 0.66
+7500 A ptr 0.206 0.66
+7520 - ptr 0.206 0.66
+8000 A ptr 0 0.30
+8020 - ptr 0 0.30
+8400 A ptr 0 0.30
+8420 - ptr 0 0.30
+9000 A+B ptr 0 0.30
+9030 - ptr 0 0.30
+9400 A ptr 0 0.30
+9420 - ptr 0 0.30
+9750 A ptr 0 0.30
+9770 - ptr 0 0.30
+10050 A ptr 0 0.30
+10070 - ptr 0 0.30
+10350 A ptr 0 0.30
+10370 - ptr 0 0.30
+10700 A ptr 0 0.30
+10718 - ptr 0 0.30
+10762 - ptr 0 0.30 swing 1
+10782 - ptr 0 0.30 swing 0
+10900 A ptr 0 0.30
+10918 - ptr 0 0.30
+10968 - ptr 0 0.30 swing 1
+10988 - ptr 0 0.30 swing 0
+11100 A ptr 0 0.30
+11118 - ptr 0 0.30
+11174 - ptr 0 0.30 swing 1
+11194 - ptr 0 0.30 swing 0
+11300 A ptr 0 0.30
+11318 - ptr 0 0.30
+11380 - ptr 0 0.30 swing 1
+11400 - ptr 0 0.30 swing 0
+11500 A ptr 0 0.30
+11518 - ptr 0 0.30
+11586 - ptr 0 0.30 swing 1
+11606 - ptr 0 0.30 swing 0
+11700 A ptr 0 0.30
+11718 - ptr 0 0.30
+11792 - ptr 0 0.30 swing 1
+11812 - ptr 0 0.30 swing 0
+11900 A ptr 0 0.30
+11918 - ptr 0 0.30
+11962 - ptr 0 0.30 swing 1
+11982 - ptr 0 0.30 swing 0
+12100 A ptr 0 0.30
+12118 - ptr 0 0.30
+12168 - ptr 0 0.30 swing 1
+12188 - ptr 0 0.30 swing 0
+12300 A ptr 0 0.30
+12318 - ptr 0 0.30
+12374 - ptr 0 0.30 swing 1
+12394 - ptr 0 0.30 swing 0
+12500 A ptr 0 0.30
+12518 - ptr 0 0.30
+12580 - ptr 0 0.30 swing 1
+12600 - ptr 0 0.30 swing 0
+12700 A ptr 0 0.30
+12718 - ptr 0 0.30
+12786 - ptr 0 0.30 swing 1
+12806 - ptr 0 0.30 swing 0
+12900 A ptr 0 0.30
+12918 - ptr 0 0.30
+12992 - ptr 0 0.30 swing 1
+13012 - ptr 0 0.30 swing 0
+13100 A ptr 0 0.30
+13118 - ptr 0 0.30
+13162 - ptr 0 0.30 swing 1
+13182 - ptr 0 0.30 swing 0
+13300 A ptr 0 0.30
+13318 - ptr 0 0.30
+13368 - ptr 0 0.30 swing 1
+13388 - ptr 0 0.30 swing 0
+13500 A ptr 0 0.30
+13518 - ptr 0 0.30
+13574 - ptr 0 0.30 swing 1
+13594 - ptr 0 0.30 swing 0
+13700 A ptr 0 0.30
+13718 - ptr 0 0.30
+13780 - ptr 0 0.30 swing 1
+13800 - ptr 0 0.30 swing 0
+13900 A ptr 0 0.30
+13918 - ptr 0 0.30
+13986 - ptr 0 0.30 swing 1
+14006 - ptr 0 0.30 swing 0
+14100 A ptr 0 0.30
+14118 - ptr 0 0.30
+14192 - ptr 0 0.30 swing 1
+14212 - ptr 0 0.30 swing 0
+14300 A ptr 0 0.30
+14318 - ptr 0 0.30
+14362 - ptr 0 0.30 swing 1
+14382 - ptr 0 0.30 swing 0
+14500 A ptr 0 0.30
+14518 - ptr 0 0.30
+14568 - ptr 0 0.30 swing 1
+14588 - ptr 0 0.30 swing 0
+14700 A ptr 0 0.30
+14718 - ptr 0 0.30
+14774 - ptr 0 0.30 swing 1
+14794 - ptr 0 0.30 swing 0
+14900 A ptr 0 0.30
+14918 - ptr 0 0.30
+14980 - ptr 0 0.30 swing 1
+15000 - ptr 0 0.30 swing 0
+15100 A ptr 0 0.30
+15118 - ptr 0 0.30
+15186 - ptr 0 0.30 swing 1
+15206 - ptr 0 0.30 swing 0
+15300 A ptr 0 0.30
+15318 - ptr 0 0.30
+15392 - ptr 0 0.30 swing 1
+15412 - ptr 0 0.30 swing 0
+15500 A ptr 0 0.30
+15518 - ptr 0 0.30
+15562 - ptr 0 0.30 swing 1
+15582 - ptr 0 0.30 swing 0
+15700 A ptr 0 0.30
+15718 - ptr 0 0.30
+15768 - ptr 0 0.30 swing 1
+15788 - ptr 0 0.30 swing 0
+15900 A ptr 0 0.30
+15918 - ptr 0 0.30
+15974 - ptr 0 0.30 swing 1
+15994 - ptr 0 0.30 swing 0
+16100 A ptr 0 0.30
+16118 - ptr 0 0.30
+16180 - ptr 0 0.30 swing 1
+16200 - ptr 0 0.30 swing 0
+16300 A ptr 0 0.30
+16318 - ptr 0 0.30
+16386 - ptr 0 0.30 swing 1
+16406 - ptr 0 0.30 swing 0
+16500 A ptr 0 0.30
+16518 - ptr 0 0.30
+16592 - ptr 0 0.30 swing 1
+16612 - ptr 0 0.30 swing 0
+16700 A ptr 0 0.30
+16718 - ptr 0 0.30
+16762 - ptr 0 0.30 swing 1
+16782 - ptr 0 0.30 swing 0
+16900 A ptr 0 0.30
+16918 - ptr 0 0.30
+16968 - ptr 0 0.30 swing 1
+16988 - ptr 0 0.30 swing 0
+17100 A ptr 0 0.30
+17118 - ptr 0 0.30
+17174 - ptr 0 0.30 swing 1
+17194 - ptr 0 0.30 swing 0
+17300 A ptr 0 0.30
+17318 - ptr 0 0.30
+17380 - ptr 0 0.30 swing 1
+17400 - ptr 0 0.30 swing 0
+17500 A ptr 0 0.30
+17518 - ptr 0 0.30
+17586 - ptr 0 0.30 swing 1
+17606 - ptr 0 0.30 swing 0
+17700 A ptr 0 0.30
+17718 - ptr 0 0.30
+17792 - ptr 0 0.30 swing 1
+17812 - ptr 0 0.30 swing 0
+17900 A ptr 0 0.30
+17918 - ptr 0 0.30
+17962 - ptr 0 0.30 swing 1
+17982 - ptr 0 0.30 swing 0
+18100 A ptr 0 0.30
+18118 - ptr 0 0.30
+18168 - ptr 0 0.30 swing 1
+18188 - ptr 0 0.30 swing 0
+18300 A ptr 0 0.30
+18318 - ptr 0 0.30
+18374 - ptr 0 0.30 swing 1
+18394 - ptr 0 0.30 swing 0
+18500 A ptr 0 0.30
+18518 - ptr 0 0.30
+18580 - ptr 0 0.30 swing 1
+18600 - ptr 0 0.30 swing 0
+18700 A ptr 0 0.30
+18718 - ptr 0 0.30
+18786 - ptr 0 0.30 swing 1
+18806 - ptr 0 0.30 swing 0
+18900 A ptr 0 0.30
+18918 - ptr 0 0.30
+18992 - ptr 0 0.30 swing 1
+19012 - ptr 0 0.30 swing 0
+19100 A ptr 0 0.30
+19118 - ptr 0 0.30
+19162 - ptr 0 0.30 swing 1
+19182 - ptr 0 0.30 swing 0
+19300 A ptr 0 0.30
+19318 - ptr 0 0.30
+19368 - ptr 0 0.30 swing 1
+19388 - ptr 0 0.30 swing 0
+19500 A ptr 0 0.30
+19518 - ptr 0 0.30
+19574 - ptr 0 0.30 swing 1
+19594 - ptr 0 0.30 swing 0
+19700 A ptr 0 0.30
+19718 - ptr 0 0.30
+19780 - ptr 0 0.30 swing 1
+19800 - ptr 0 0.30 swing 0
+19900 A ptr 0 0.30
+19918 - ptr 0 0.30
+19986 - ptr 0 0.30 swing 1
+20006 - ptr 0 0.30 swing 0
+20100 A ptr 0 0.30
+20118 - ptr 0 0.30
+20192 - ptr 0 0.30 swing 1
+20212 - ptr 0 0.30 swing 0
+20300 A ptr 0 0.30
+20318 - ptr 0 0.30
+20362 - ptr 0 0.30 swing 1
+20382 - ptr 0 0.30 swing 0
+20500 A ptr 0 0.30
+20518 - ptr 0 0.30
+20568 - ptr 0 0.30 swing 1
+20588 - ptr 0 0.30 swing 0
+20700 A ptr 0 0.30
+20718 - ptr 0 0.30
+20774 - ptr 0 0.30 swing 1
+20794 - ptr 0 0.30 swing 0
+20900 A ptr 0 0.30
+20918 - ptr 0 0.30
+20980 - ptr 0 0.30 swing 1
+21000 - ptr 0 0.30 swing 0
+21100 A ptr 0 0.30
+21118 - ptr 0 0.30
+21186 - ptr 0 0.30 swing 1
+21206 - ptr 0 0.30 swing 0
+21300 A ptr 0 0.30
+21318 - ptr 0 0.30
+21392 - ptr 0 0.30 swing 1
+21412 - ptr 0 0.30 swing 0
+21500 A ptr 0 0.30
+21518 - ptr 0 0.30
+21562 - ptr 0 0.30 swing 1
+21582 - ptr 0 0.30 swing 0
+21700 A ptr 0 0.30
+21718 - ptr 0 0.30
+21768 - ptr 0 0.30 swing 1
+21788 - ptr 0 0.30 swing 0
+21900 A ptr 0 0.30
+21918 - ptr 0 0.30
+21974 - ptr 0 0.30 swing 1
+21994 - ptr 0 0.30 swing 0
+22100 A ptr 0 0.30
+22118 - ptr 0 0.30
+22180 - ptr 0 0.30 swing 1
+22200 - ptr 0 0.30 swing 0
+22300 A ptr 0 0.30
+22318 - ptr 0 0.30
+22386 - ptr 0 0.30 swing 1
+22406 - ptr 0 0.30 swing 0
+22500 A ptr 0 0.30
+22518 - ptr 0 0.30
+22592 - ptr 0 0.30 swing 1
+22612 - ptr 0 0.30 swing 0

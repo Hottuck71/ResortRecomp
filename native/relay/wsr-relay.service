@@ -1,0 +1,20 @@
+# systemd service for wsr_relay. See README.md beside this file.
+# Copy to /etc/systemd/system/wsr-relay.service, then: sudo systemctl enable --now wsr-relay
+[Unit]
+Description=Wii Sports Resort online relay (wsr_relay)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/opt/wsr-relay/wsr_relay 51020
+Restart=on-failure
+RestartSec=5
+# It needs nothing but its port: no files, no privileges.
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

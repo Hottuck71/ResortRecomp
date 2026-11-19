@@ -1,0 +1,15 @@
+# Probe: title screen into cycling with the stand-in Nunchuk plugged in; steps to see each screen.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr 0.091 0.599
+2800 A ptr 0.091 0.599
+2820 - ptr 0 0.30 plug 1
+5000 A ptr 0 0.05
+5020 - ptr 0 0.05
+5600 A ptr 0.334 0.708
+5620 - ptr 0.334 0.708
+6200 - ptr -0.279 0.32

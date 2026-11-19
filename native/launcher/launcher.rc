@@ -1,0 +1,32 @@
+// Version details for Launcher.exe, shown in Windows under Properties > Details.
+#include <winver.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1, 0, 0, 0
+PRODUCTVERSION 1, 0, 0, 0
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE 0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "Lane Carle (crazyman12)"
+            VALUE "FileDescription", "Wii Sports Resort Launcher"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "Launcher"
+            VALUE "LegalCopyright", "Launcher (c) 2026 Lane Carle (crazyman12). Wii Sports Resort is Nintendo's. Mii art: My Avatar Editor (c) 2009 Trevor McCauley, MIT licence."
+            VALUE "OriginalFilename", "Launcher.exe"
+            VALUE "ProductName", "Wii Sports Resort Launcher"
+            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "Comments", "By Lane Carle, aka crazyman12."
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

@@ -1,0 +1,26 @@
+diff --git a/lib/webgpu/gpu.cpp b/lib/webgpu/gpu.cpp
+index 97f886f..1bed7eb 100644
+--- a/lib/webgpu/gpu.cpp
++++ b/lib/webgpu/gpu.cpp
+@@ -1,3 +1,4 @@
++#include <cstdlib>
+ #include "gpu.hpp"
+ 
+ #include <algorithm>
+@@ -766,9 +767,15 @@ bool initialize(AuroraBackend auroraBackend, bool allowCpu) {
+     return false;
+   }
+   {
++    // The host program can ask for the power-saving graphics card, or for the fallback (software, on the
++    // processor) adapter, through the environment: AURORA_POWER_PREFERENCE=low, AURORA_FORCE_FALLBACK_ADAPTER=1.
++    const char* powerEnv = std::getenv("AURORA_POWER_PREFERENCE");
++    const char* fallbackEnv = std::getenv("AURORA_FORCE_FALLBACK_ADAPTER");
+     const wgpu::RequestAdapterOptions options{
+         .featureLevel = wgpu::FeatureLevel::Compatibility,
+-        .powerPreference = wgpu::PowerPreference::HighPerformance,
++        .powerPreference = powerEnv != nullptr && std::string_view{powerEnv} == "low" ? wgpu::PowerPreference::LowPower
++                                                                                   : wgpu::PowerPreference::HighPerformance,
++        .forceFallbackAdapter = fallbackEnv != nullptr && std::string_view{fallbackEnv} == "1",
+         .backendType = backend,
+         .compatibleSurface = startupSurface,
+     };

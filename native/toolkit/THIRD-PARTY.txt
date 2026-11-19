@@ -1,0 +1,48 @@
+ResortRecomp, third-party parts
+===============================
+ResortRecomp (the launcher, runtime, relay, and build) is free software under the GNU General Public License,
+version 3 (GPL-3.0.txt), because it is built with parts of DolRecomp, which is GPL-3.0. Source:
+the project's GitHub repository. Each part below keeps its own licence; texts are in this folder.
+
+Translator and its runtime
+  DolRecomp            GPL-3.0          https://github.com/ExpansionPak/DolRecomp (commit 02e27ac, with
+                                        native/patches/dolrecomp-direct-calls.patch from this project)
+                                        builder/dolrecomp.exe, builder/dolrecomp/ (cpu.h, types.h, and
+                                        cpu_core.c: DolRecomp's cpu.c with its Dolphin-derived estimate
+                                        tables removed; native/src/estimate.c replaces them)
+
+Graphics, windows, and input (prebuilt in builder/lib, and the DLLs)
+  aurora               MIT              https://github.com/encounter/aurora (commit f77492f, with this
+                                        project's patches in native/patches)
+  Dawn (webgpu_dawn)   BSD-3-Clause     https://dawn.googlesource.com/dawn
+  DirectX Shader       NCSA (dxcompiler) and Microsoft's redistributable licence (dxil.dll), as packaged
+  Compiler             with Dawn's prebuilt build. https://github.com/microsoft/DirectXShaderCompiler
+  SDL3                 zlib             https://github.com/libsdl-org/SDL
+  Dear ImGui           MIT              https://github.com/ocornut/imgui
+  Abseil               Apache-2.0       https://github.com/abseil/abseil-cpp
+  {fmt}                MIT              https://github.com/fmtlib/fmt
+  FreeType             FreeType License https://freetype.org
+  libpng               libpng License   http://www.libpng.org
+  Tracy                BSD-3-Clause     https://github.com/wolfpld/tracy
+  nlohmann/json        MIT              https://github.com/nlohmann/json
+  xxHash               BSD-2-Clause     https://github.com/Cyan4973/xxHash
+  zstd                 BSD-3-Clause     https://github.com/facebook/zstd
+  zlib                 zlib             https://zlib.net
+  bzip2                bzip2 License    https://sourceware.org/bzip2
+  SQLite               Public domain    https://sqlite.org
+
+Mii pictures and icons in the launcher
+  My Avatar Editor     MIT              (c) 2009 Trevor McCauley (MyAvatarEditor.txt)
+
+Compiler (builder/toolchain), unmodified MSYS2 UCRT64 packages, listed with versions in
+compiler-packages.txt
+  GCC                  GPL-3.0 with the GCC Runtime Library Exception
+  GNU Binutils, Make   GPL-3.0
+  MinGW-w64            ZPL, and the licences in builder/toolchain/share/licenses
+  GMP, MPFR, MPC, ISL  LGPL-3.0 / MIT
+  Their source code: https://github.com/msys2/MINGW-packages (the package recipes, which name each
+  upstream source) and https://repo.msys2.org/mingw/sources/ (the source archives of these exact versions).
+  Each package's licence is in builder/toolchain/share/licenses.
+
+The game
+  Wii Sports Resort is (c) Nintendo. None of it is in ResortRecomp. Each player provides their own copy.

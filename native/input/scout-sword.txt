@@ -1,0 +1,10 @@
+# Title screen to the Swordplay menu, then waits. For finding menu positions.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr -0.277 -0.149
+2800 A ptr -0.277 -0.149
+2820 - ptr 0 0.30

@@ -1,0 +1,48 @@
+diff --git a/src/app/pipeline.c b/src/app/pipeline.c
+index d5cb313..ccec60c 100644
+--- a/src/app/pipeline.c
++++ b/src/app/pipeline.c
+@@ -2607,6 +2607,43 @@ int emit_code_sections_split(const LoadedCodeSection* sections,
+     u32 file_count = 0;
+     const u32 chunk_instructions = c_chunk_instructions();
+     FunctionList funcs = {0};
++
++    /* Every chunk's start, known before any chunk is written, so a cross-chunk bl can call its target chunk
++       directly instead of returning to the chassis (emit_cross_chunk_call). Chunks start every
++       chunk_instructions instructions in each section, as the loop below makes them. */
++    {
++        static u32* chunk_table = NULL;
++        u32 chunk_table_count = 0, chunk_table_capacity = 0;
++        for (u32 s = 0; s < section_count; s++) {
++            if (sections[s].size == 0 || !sections[s].data)
++                continue;
++            u32 n = sections[s].size / 4u;
++            for (u32 start = 0; start < n; start += chunk_instructions) {
++                if (chunk_table_count == chunk_table_capacity) {
++                    chunk_table_capacity = chunk_table_capacity ? chunk_table_capacity * 2u : 1024u;
++                    u32* grown = (u32*)realloc(chunk_table, chunk_table_capacity * sizeof(u32));
++                    if (!grown) {
++                        fprintf(stderr, "error: out of memory\n");
++                        fclose(header);
++                        fclose(manifest);
++                        return 0;
++                    }
++                    chunk_table = grown;
++                }
++                chunk_table[chunk_table_count++] = sections[s].address + start * 4u;
++            }
++        }
++        for (u32 i = 1; i < chunk_table_count; i++) { /* sections come in address order, but make sure */
++            u32 v = chunk_table[i], j = i;
++            while (j > 0 && chunk_table[j - 1u] > v) {
++                chunk_table[j] = chunk_table[j - 1u];
++                j--;
++            }
++            chunk_table[j] = v;
++        }
++        emit_set_chunk_table(chunk_table, chunk_table_count);
++        printf("direct cross-chunk calls: %u chunks\n", chunk_table_count);
++    }
+     SMCAnalysis smc = {0};
+ 
+     for (u32 s = 0; s < section_count; s++) {

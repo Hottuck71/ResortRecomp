@@ -1,0 +1,185 @@
+# Sweep: title screen into basket-pickup (sport tile row 2, column 1, mode entry 2).
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr -0.277 0.24
+2800 A ptr -0.277 0.24
+2820 - ptr 0 0.30
+3300 - ptr 0 0.33
+3400 A ptr 0 0.33
+3420 - ptr 0 0.30
+3800 A ptr 0 0.30
+3820 - ptr 0 0.30
+4400 - ptr -0.29 0.27
+4600 A ptr -0.29 0.27
+4620 - ptr 0 0.30
+5100 A ptr 0 0.30
+5120 - ptr 0 0.30
+5500 A ptr 0 0.30
+5520 - ptr 0 0.30
+6000 - ptr 0.167 0.836
+6200 A ptr 0.167 0.836
+6220 - ptr 0 0.30
+6500 - ptr 0.206 0.33
+6700 A ptr 0.206 0.33
+6720 - ptr 0 0.30
+7300 - ptr 0.206 0.66
+7500 A ptr 0.206 0.66
+7520 - ptr 0.206 0.66
+8000 A ptr 0 0.30
+8020 - ptr 0 0.30
+8400 A ptr 0 0.30
+8420 - ptr 0 0.30
+9000 A+B ptr 0 0.30
+9030 - ptr 0 0.30
+9400 A ptr 0 0.30
+9420 - ptr 0 0.30
+9520 - ptr 0 0.30 swing 1
+9550 - ptr 0 0.30 swing 0
+9800 A ptr 0 0.30
+9820 - ptr 0 0.30
+9920 - ptr 0 0.30 swing 1
+9950 - ptr 0 0.30 swing 0
+10200 A ptr 0 0.30
+10220 - ptr 0 0.30
+10320 - ptr 0 0.30 swing 1
+10350 - ptr 0 0.30 swing 0
+10600 A ptr 0 0.30
+10620 - ptr 0 0.30
+10720 - ptr 0 0.30 swing 1
+10750 - ptr 0 0.30 swing 0
+11000 A ptr 0 0.30
+11020 - ptr 0 0.30
+11120 - ptr 0 0.30 swing 1
+11150 - ptr 0 0.30 swing 0
+11400 A ptr 0 0.30
+11420 - ptr 0 0.30
+11520 - ptr 0 0.30 swing 1
+11550 - ptr 0 0.30 swing 0
+11800 A ptr 0 0.30
+11820 - ptr 0 0.30
+11920 - ptr 0 0.30 swing 1
+11950 - ptr 0 0.30 swing 0
+12200 A ptr 0 0.30
+12220 - ptr 0 0.30
+12320 - ptr 0 0.30 swing 1
+12350 - ptr 0 0.30 swing 0
+12600 A ptr 0 0.30
+12620 - ptr 0 0.30
+12720 - ptr 0 0.30 swing 1
+12750 - ptr 0 0.30 swing 0
+13000 A ptr 0 0.30
+13020 - ptr 0 0.30
+13120 - ptr 0 0.30 swing 1
+13150 - ptr 0 0.30 swing 0
+13400 A ptr 0 0.30
+13420 - ptr 0 0.30
+13520 - ptr 0 0.30 swing 1
+13550 - ptr 0 0.30 swing 0
+13800 A ptr 0 0.30
+13820 - ptr 0 0.30
+13920 - ptr 0 0.30 swing 1
+13950 - ptr 0 0.30 swing 0
+14200 A ptr 0 0.30
+14220 - ptr 0 0.30
+14320 - ptr 0 0.30 swing 1
+14350 - ptr 0 0.30 swing 0
+14600 A ptr 0 0.30
+14620 - ptr 0 0.30
+14720 - ptr 0 0.30 swing 1
+14750 - ptr 0 0.30 swing 0
+15000 A ptr 0 0.30
+15020 - ptr 0 0.30
+15120 - ptr 0 0.30 swing 1
+15150 - ptr 0 0.30 swing 0
+15400 A ptr 0 0.30
+15420 - ptr 0 0.30
+15520 - ptr 0 0.30 swing 1
+15550 - ptr 0 0.30 swing 0
+15800 A ptr 0 0.30
+15820 - ptr 0 0.30
+15920 - ptr 0 0.30 swing 1
+15950 - ptr 0 0.30 swing 0
+16200 A ptr 0 0.30
+16220 - ptr 0 0.30
+16320 - ptr 0 0.30 swing 1
+16350 - ptr 0 0.30 swing 0
+16600 A ptr 0 0.30
+16620 - ptr 0 0.30
+16720 - ptr 0 0.30 swing 1
+16750 - ptr 0 0.30 swing 0
+17000 A ptr 0 0.30
+17020 - ptr 0 0.30
+17120 - ptr 0 0.30 swing 1
+17150 - ptr 0 0.30 swing 0
+17400 A ptr 0 0.30
+17420 - ptr 0 0.30
+17520 - ptr 0 0.30 swing 1
+17550 - ptr 0 0.30 swing 0
+17800 A ptr 0 0.30
+17820 - ptr 0 0.30
+17920 - ptr 0 0.30 swing 1
+17950 - ptr 0 0.30 swing 0
+18200 A ptr 0 0.30
+18220 - ptr 0 0.30
+18320 - ptr 0 0.30 swing 1
+18350 - ptr 0 0.30 swing 0
+18600 A ptr 0 0.30
+18620 - ptr 0 0.30
+18720 - ptr 0 0.30 swing 1
+18750 - ptr 0 0.30 swing 0
+19000 A ptr 0 0.30
+19020 - ptr 0 0.30
+19120 - ptr 0 0.30 swing 1
+19150 - ptr 0 0.30 swing 0
+19400 A ptr 0 0.30
+19420 - ptr 0 0.30
+19520 - ptr 0 0.30 swing 1
+19550 - ptr 0 0.30 swing 0
+19800 A ptr 0 0.30
+19820 - ptr 0 0.30
+19920 - ptr 0 0.30 swing 1
+19950 - ptr 0 0.30 swing 0
+20200 A ptr 0 0.30
+20220 - ptr 0 0.30
+20320 - ptr 0 0.30 swing 1
+20350 - ptr 0 0.30 swing 0
+20600 A ptr 0 0.30
+20620 - ptr 0 0.30
+20720 - ptr 0 0.30 swing 1
+20750 - ptr 0 0.30 swing 0
+21000 A ptr 0 0.30
+21020 - ptr 0 0.30
+21120 - ptr 0 0.30 swing 1
+21150 - ptr 0 0.30 swing 0
+21400 A ptr 0 0.30
+21420 - ptr 0 0.30
+21520 - ptr 0 0.30 swing 1
+21550 - ptr 0 0.30 swing 0
+21800 A ptr 0 0.30
+21820 - ptr 0 0.30
+21920 - ptr 0 0.30 swing 1
+21950 - ptr 0 0.30 swing 0
+22200 A ptr 0 0.30
+22220 - ptr 0 0.30
+22320 - ptr 0 0.30 swing 1
+22350 - ptr 0 0.30 swing 0
+22600 A ptr 0 0.30
+22620 - ptr 0 0.30
+22720 - ptr 0 0.30 swing 1
+22750 - ptr 0 0.30 swing 0
+23000 A ptr 0 0.30
+23020 - ptr 0 0.30
+23120 - ptr 0 0.30 swing 1
+23150 - ptr 0 0.30 swing 0
+23400 A ptr 0 0.30
+23420 - ptr 0 0.30
+23520 - ptr 0 0.30 swing 1
+23550 - ptr 0 0.30 swing 0
+23800 A ptr 0 0.30
+23820 - ptr 0 0.30
+23920 - ptr 0 0.30 swing 1
+23950 - ptr 0 0.30 swing 0

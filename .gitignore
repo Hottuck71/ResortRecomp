@@ -1,0 +1,25 @@
+﻿# Built things and fetched tools: never in the repository.
+/exports/
+/analysis/
+/third_party/
+*.o
+*.a
+*.exe
+*.dll
+*.gcda
+*.zip
+__pycache__/
+
+# Anything made from a game: never in the repository.
+game/
+save/
+/build/
+*.dol
+*.wbfs
+*.iso
+*.rvz
+*.wia
+*.gcz
+*.ciso
+RFL_DB.dat*
+launcher.ini

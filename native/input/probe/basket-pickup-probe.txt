@@ -1,0 +1,17 @@
+# Probe: Basketball Pickup Game (bottom of a two-entry list), description, then hover only.
+600 A
+620 -
+1300 A+B ptr 0 0
+1320 - ptr 0 0
+1900 A ptr 0 0
+1920 - ptr 0 0
+2600 - ptr -0.277 0.24
+2800 A ptr -0.277 0.24
+2820 - ptr 0 0.30
+3300 - ptr 0 0.59
+3500 A ptr 0 0.59
+3520 - ptr 0 0.59
+4100 - ptr 0.334 0.708
+4300 A ptr 0.334 0.708
+4320 - ptr 0.334 0.708
+5000 - ptr -0.279 0.20

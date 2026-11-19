@@ -1,0 +1,11 @@
+# Press A now and then, to walk through early screens.
+600 A
+620 -
+1200 A
+1220 -
+1800 A
+1820 -
+2400 A
+2420 -
+3000 A
+3020 -

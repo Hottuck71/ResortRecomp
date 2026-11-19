@@ -1,0 +1,234 @@
+diff --git a/lib/gfx/resources.hpp b/lib/gfx/resources.hpp
+index 3fdc0ee..fafea4f 100644
+--- a/lib/gfx/resources.hpp
++++ b/lib/gfx/resources.hpp
+@@ -5,9 +5,9 @@
+ namespace aurora::gfx {
+ inline constexpr bool UseTextureBuffer = true;
+ inline constexpr uint64_t UniformBufferSize = 25165824; // 24 MiB
+-inline constexpr uint64_t VertexBufferSize = 5242880;   // 5 MiB
+-inline constexpr uint64_t IndexBufferSize = 2097152;    // 2 MiB
+-inline constexpr uint64_t StorageBufferSize = 8388608;  // 8 MiB
++inline constexpr uint64_t VertexBufferSize = 16777216;  // 16 MiB
++inline constexpr uint64_t IndexBufferSize = 8388608;    // 8 MiB
++inline constexpr uint64_t StorageBufferSize = 33554432; // 32 MiB: a mapped buffer aborts when full
+ inline constexpr uint64_t TextureUploadSize = 25165824; // 24 MiB
+ 
+ namespace detail {
+diff --git a/lib/gx/gx.cpp b/lib/gx/gx.cpp
+index 490de4c..18ebb4b 100644
+--- a/lib/gx/gx.cpp
++++ b/lib/gx/gx.cpp
+@@ -459,6 +459,17 @@ void populate_pipeline_config(PipelineConfig& config, GXPrimitive primitive, GXV
+   if (g_gxState.alphaCompare) {
+     config.shaderConfig.alphaCompare = g_gxState.alphaCompare;
+   }
++  if (g_gxState.zTexOp != GX_ZT_DISABLE && g_gxState.zTexOp <= GX_ZT_REPLACE) {
++    config.shaderConfig.zTexOp = g_gxState.zTexOp;
++    config.shaderConfig.zTexFmt = g_gxState.zTexFmt;
++    if (g_gxState.zTexBias != 0) {
++      static bool warned = false;
++      if (!warned) {
++        warned = true;
++        Log.warn("Z texture bias {:06X} is not supported and is treated as 0", g_gxState.zTexBias);
++      }
++    }
++  }
+   const auto cullMode = config.shaderConfig.lineMode == 0 ? g_gxState.cullMode : GX_CULL_NONE;
+   const auto [polygonOffset, polygonOffsetScale] = polygon_offset_for_cull_mode(cullMode);
+   const bool hasAlpha = efb_has_alpha(g_gxState.pixelFmt);
+diff --git a/lib/gx/gx.hpp b/lib/gx/gx.hpp
+index 257f127..cf5ec2b 100644
+--- a/lib/gx/gx.hpp
++++ b/lib/gx/gx.hpp
+@@ -355,6 +355,9 @@ struct GXState {
+   GXPixelFmt pixelFmt = GX_PF_RGB8_Z24;
+   GXZFmt16 zFmt = GX_ZC_LINEAR;
+   bool zCompLocBeforeTex = false;
++  u8 zTexOp = 0;    // GXZTexOp from BP 0xF5
++  u8 zTexFmt = 0;   // 0 = Z8, 1 = Z16, 2 = Z24X8
++  u32 zTexBias = 0; // BP 0xF4
+   u32 dstAlpha; // u8; UINT32_MAX = disabled
+   AlphaCompare alphaCompare;
+   std::array<Vec4<float>, MaxTevRegs> colorRegs;
+@@ -505,7 +508,9 @@ struct ShaderConfig {
+   u8 lineMode : 2 = 0; // 1 = GX_LINES, 2 = GX_LINESTRIP, 3 = GX_POINTS
+   u8 fogRangeEnabled : 1 = false;
+   u8 pad1 : 5 = 0;
+-  u8 pad2 = 0;
++  u8 zTexOp : 2 = 0;  // GX_ZT_DISABLE, ADD, REPLACE: depth from the last TEV stage's texture
++  u8 zTexFmt : 2 = 0; // 0 = Z8, 1 = Z16, 2 = Z24X8
++  u8 pad2 : 4 = 0;
+   std::array<AttrConfig, MaxVtxAttr> attrs;
+   std::array<TevSwap, MaxTevSwap> tevSwapTable;
+   std::array<TevStage, MaxTevStages> tevStages;
+diff --git a/lib/gx/regs.cpp b/lib/gx/regs.cpp
+index 8c53e79..2395d13 100644
+--- a/lib/gx/regs.cpp
++++ b/lib/gx/regs.cpp
+@@ -445,6 +445,13 @@ void bp_fog_color(u8, u32 value) noexcept {
+ }
+ 
+ // Alpha compare (0xF3)
++// Z texture bias (0xF4) and mode (0xF5)
++void bp_ztex_bias(u8, u32 value) noexcept { g_gxState.zTexBias = reg_get(value, 24, 0); }
++void bp_ztex_mode(u8, u32 value) noexcept {
++  g_gxState.zTexFmt = reg_get(value, 2, 0);
++  g_gxState.zTexOp = reg_get(value, 2, 2);
++}
++
+ void bp_alpha_compare(u8, u32 value) noexcept {
+   g_gxState.alphaCompare.ref0 = reg_get(value, 8, 0);
+   g_gxState.alphaCompare.ref1 = reg_get(value, 8, 8);
+@@ -578,6 +585,8 @@ constexpr auto kBpRegs = [] {
+   regs[0xF1] = {bp_fog3, DirtyPipeline | DirtyUniform}; // fog.type affects shader
+   regs[0xF2] = {bp_fog_color, DirtyUniform};
+   regs[0xF3] = {bp_alpha_compare, DirtyPipeline};
++  regs[0xF4] = {bp_ztex_bias};
++  regs[0xF5] = {bp_ztex_mode, DirtyPipeline};
+   for (u8 r = 0xF6; r <= 0xFD; ++r) {
+     regs[r] = {bp_ksel, DirtyPipeline};
+   }
+diff --git a/lib/gx/shader.cpp b/lib/gx/shader.cpp
+index 2d10095..d2f5c77 100644
+--- a/lib/gx/shader.cpp
++++ b/lib/gx/shader.cpp
+@@ -568,6 +568,16 @@ std::string vtx_attr(const ShaderConfig& config, GXAttr attr) {
+     if (attr == GX_VA_CLR0 || attr == GX_VA_CLR1) {
+       return "vec4f(0.0, 0.0, 0.0, 0.0)"s;
+     }
++    if (attr >= GX_VA_TEX0 && attr <= GX_VA_TEX7) {
++      // A texgen reads a texture coordinate the vertices don't have: undefined on the console, where an
++      // unmodified game can still do it (Wii Sports Resort's 100-Pin Bowling). Read zero rather than stop.
++      static bool warned = false;
++      if (!warned) {
++        warned = true;
++        Log.warn("texgen reads vertex attribute {} that the vertices don't have; using zero", underlying(attr));
++      }
++      return "vec2f(0.0, 0.0)"s;
++    }
+     UNLIKELY FATAL("unmapped vtx attr {}", underlying(attr));
+   }
+   if (attr == GX_VA_POS) {
+@@ -1213,8 +1223,16 @@ std::string build_shader_source(const ShaderConfig& config, DstAlphaMode dstAlph
+       vtxXfrAttrs += fmt::format("\n    var tc{} = vec4f({}, 1.0);", i, nbt_slice_local(NbtSlice::B));
+     } else if (tcg.src == GX_TG_TANGENT) {
+       vtxXfrAttrs += fmt::format("\n    var tc{} = vec4f({}, 1.0);", i, nbt_slice_local(NbtSlice::T));
+-    } else
+-      UNLIKELY FATAL("unhandled tcg src {}", underlying(tcg.src));
++    } else {
++      // A stage reads a texture coordinate no texgen makes: undefined on the console, but an unmodified game
++      // can do it (Wii Sports Resort's 100-Pin Bowling). A fixed coordinate keeps drawing going.
++      static bool warned = false;
++      if (!warned) {
++        warned = true;
++        Log.warn("texcoord {} has no texgen source ({}); using a fixed coordinate", i, underlying(tcg.src));
++      }
++      vtxXfrAttrs += fmt::format("\n    var tc{} = vec4f(0.0, 0.0, 1.0, 1.0);", i);
++    }
+     if (tcg.type == GX_TG_MTX2x4 || tcg.type == GX_TG_MTX3x4) {
+       if (info.indexAttr.test(GX_VA_TEX0MTXIDX + i)) {
+         vtxXfrAttrs += fmt::format("\n    var tc{0}_tmp = tc{0} * ubuf.postex_mtx[in_texmtxidx{0} / 3u];", i);
+@@ -1604,16 +1622,56 @@ std::string build_shader_source(const ShaderConfig& config, DstAlphaMode dstAlph
+     fragmentFn += "\n    prev.a = 1.0;";
+   }
+ 
++  // Z texture: the pixel's depth comes from the last TEV stage's texture, read as 8, 16, or 24 bits
++  bool writesDepth = false;
++  if (config.zTexOp != GX_ZT_DISABLE && config.tevStageCount > 0) {
++    const auto& last = config.tevStages[config.tevStageCount - 1];
++    if (last.texMapId != GX_TEXMAP_NULL && last.texCoordId != GX_TEXCOORD_NULL) {
++      writesDepth = true;
++      fragmentFn += fmt::format(
++          "\n    let ztex_s = vec4u(clamp(textureSampleBias(tex{0}, tex{0}_samp, tex{1}_uv, "
++          "ubuf.tex{0}_size_bias.z), vec4f(0.0), vec4f(1.0)) * 255.0 + 0.5);",
++          underlying(last.texMapId), underlying(last.texCoordId));
++      switch (config.zTexFmt) {
++      case 0: // Z8
++        fragmentFn += "\n    var ztex_z = ztex_s.a;";
++        break;
++      case 1: // Z16
++        fragmentFn += "\n    var ztex_z = ztex_s.r + (ztex_s.a << 8u);";
++        break;
++      default: // Z24X8
++        fragmentFn += "\n    var ztex_z = (ztex_s.r << 16u) | (ztex_s.g << 8u) | ztex_s.b;";
++        break;
++      }
++      if (config.zTexOp == GX_ZT_ADD) {
++        fragmentFn += fmt::format("\n    ztex_z += u32(clamp({}, 0.0, 1.0) * 16777215.0 + 0.5);",
++                                  UseReversedZ ? "1.0 - in.pos.z" : "in.pos.z");
++      }
++      fragmentFn += fmt::format("\n    let ztex_depth = {};",
++                                UseReversedZ ? "1.0 - f32(ztex_z & 0xFFFFFFu) / 16777215.0"
++                                             : "f32(ztex_z & 0xFFFFFFu) / 16777215.0");
++    }
++  }
++
+   std::string fragmentOutput;
+   std::string_view fragmentOutputType = "@location(0) vec4f"sv;
+   std::string fragmentReturn = "\n    return prev;"s;
++  if (writesDepth) {
++    fragmentOutput =
++        "\nstruct FragmentOutput {\n"
++        "    @location(0) color: vec4f,\n"
++        "    @builtin(frag_depth) depth: f32,\n"
++        "};\n";
++    fragmentOutputType = "FragmentOutput"sv;
++    fragmentReturn = "\n    return FragmentOutput(prev, ztex_depth);";
++  }
+   if (normalAttachment != UINT32_MAX) {
+     fragmentOutput = fmt::format(
+         "\nstruct FragmentOutput {{\n"
+         "    @location(0) color: vec4f,\n"
+-        "    @location({}) normal: vec4f,\n"
++        "    @location({}) normal: vec4f,{}\n"
+         "}};\n",
+-        normalAttachment);
++        normalAttachment, writesDepth ? "\n    @builtin(frag_depth) depth: f32," : "");
+     fragmentOutputType = "FragmentOutput"sv;
+     fragmentReturn = "\n    var out: FragmentOutput;\n    out.color = prev;";
+     if (useNormalTarget) {
+@@ -1624,6 +1682,9 @@ std::string build_shader_source(const ShaderConfig& config, DstAlphaMode dstAlph
+     } else {
+       fragmentReturn += "\n    out.normal = vec4f(0.5, 0.5, 0.5, 0.0);";
+     }
++    if (writesDepth) {
++      fragmentReturn += "\n    out.depth = ztex_depth;";
++    }
+     fragmentReturn += "\n    return out;";
+   }
+ 
+@@ -1631,10 +1692,11 @@ std::string build_shader_source(const ShaderConfig& config, DstAlphaMode dstAlph
+     fragmentOutput =
+         "\nstruct FragmentOutput {\n"
+         "    @location(0) @blend_src(0) color: vec4f,\n"
+-        "    @location(0) @blend_src(1) blend: vec4f,\n"
+-        "};\n";
++        "    @location(0) @blend_src(1) blend: vec4f,\n"s +
++        (writesDepth ? "    @builtin(frag_depth) depth: f32,\n"s : ""s) + "};\n"s;
+     fragmentOutputType = "FragmentOutput"sv;
+-    fragmentReturn = "\n    return FragmentOutput(vec4f(prev.rgb, 1.0), prev);";
++    fragmentReturn = writesDepth ? "\n    return FragmentOutput(vec4f(prev.rgb, 1.0), prev, ztex_depth);"
++                                 : "\n    return FragmentOutput(vec4f(prev.rgb, 1.0), prev);";
+   }
+ 
+   auto shaderSource =
+diff --git a/lib/gx/shader_info.cpp b/lib/gx/shader_info.cpp
+index bccde64..8750679 100644
+--- a/lib/gx/shader_info.cpp
++++ b/lib/gx/shader_info.cpp
+@@ -275,6 +275,14 @@ ShaderInfo build_shader_info(const ShaderConfig& config) noexcept {
+       info.writesTevReg.set(stage.alphaOp.outReg);
+     }
+   }
++  if (config.zTexOp != GX_ZT_DISABLE && config.tevStageCount > 0) {
++    // The Z texture is the last TEV stage's texture, whether or not its colour formula uses it
++    const auto& last = config.tevStages[config.tevStageCount - 1];
++    if (last.texMapId != GX_TEXMAP_NULL && last.texCoordId != GX_TEXCOORD_NULL) {
++      info.sampledTexCoords.set(last.texCoordId);
++      info.sampledTextures.set(last.texMapId);
++    }
++  }
+   for (int i = 0; i < config.tevStageCount; ++i) {
+     const auto& stage = config.tevStages[i];
+     // Skip if not enabled

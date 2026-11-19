@@ -1,5 +1,9 @@
 # wsr_relay: an online room server for your Ubuntu machine
 
+> **Setting up a server?** The step-by-step guide for a local (same-house) server, a Windows PC, an Ubuntu home
+> server or Raspberry Pi, or a rented VPS is **[docs/ONLINE-SERVER.md](../../docs/ONLINE-SERVER.md)**. This page
+> has the technical notes.
+
 Online play normally needs the host's router to forward a port to the host's PC. With this relay running on a
 server everyone can reach, the host and the players only connect *out* to the server, so nobody else forwards
 anything. The relay passes bytes between them and nothing more: it doesn't read the game's messages, keeps

@@ -26,8 +26,18 @@ On a slower PC, **Play > Speed > Start measuring**, play for 10 minutes, then **
 tuned by how it ran on that PC (profile-guided optimization): about 35 to 65% faster in tests, most in the
 sports played while measuring.
 
-Online play needs everyone on the same ResortRecomp version. A small relay server lets friends play without
-port forwarding: [native/relay/SERVER-SETUP.txt](native/relay/SERVER-SETUP.txt).
+## Playing online
+
+Online play needs everyone on the same ResortRecomp version. Players connect through a small relay server that
+anyone can run, so only the server's owner ever opens a port:
+
+- **Same house / LAN:** double-click `relay\wsr_relay.exe` on any PC and everyone types that PC's address. No
+  router changes.
+- **Friends over the internet:** run the relay on a Windows PC, an Ubuntu home server or Raspberry Pi, or a rented
+  VPS, and forward one TCP port.
+
+Step by step: **[docs/ONLINE-SERVER.md](docs/ONLINE-SERVER.md)** (also in the download as
+`relay\SERVER-SETUP.txt`).
 
 **Please don't share** your extracted game, your built `ResortRecomp-Game.exe`, or anything else made from your
 copy. Everyone sets up from their own disc.

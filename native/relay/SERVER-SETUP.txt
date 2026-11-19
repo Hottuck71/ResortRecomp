@@ -1,6 +1,14 @@
 RUNNING YOUR OWN ONLINE SERVER (RELAY)
-Wii Sports Resort native PC build, by Lane Carle (crazyman12)
+ResortRecomp, by Lane Carle (crazyman12)
 =====================================================================
+The same guide, with tables and links, is online at:
+https://github.com/Hottuck71/ResortRecomp/blob/main/docs/ONLINE-SERVER.md
+
+ONLY PLAYING WITH PEOPLE IN THE SAME HOUSE?
+Then you don't need the router steps at all: on any PC on your network,
+double-click relay\wsr_relay.exe (part B, steps 1 to 3), and everyone
+types that PC's home address (from ipconfig) in "Relay server".
+
 
 WHAT THIS IS
 ------------
@@ -30,7 +38,10 @@ A. UBUNTU SERVER
 
      scp wsr_relay.c wsr-relay.service you@192.168.1.50:~
 
-   (A USB stick or any other way of copying works too.)
+   (A USB stick or any other way of copying works too.) Or download
+   them on the server itself:
+     curl -LO https://raw.githubusercontent.com/Hottuck71/ResortRecomp/main/native/relay/wsr_relay.c
+     curl -LO https://raw.githubusercontent.com/Hottuck71/ResortRecomp/main/native/relay/wsr-relay.service
 
 2. Log in to the server
      ssh you@192.168.1.50
@@ -96,7 +107,8 @@ B. WINDOWS 10 OR 11 PC
      wsr_relay listening on TCP port 51020 at 0.0.0.0
    Leave this window open: the relay runs as long as it's open.
    (Windows may say it protected your PC: click "More info", then
-   "Run anyway". The program is signed by Lane Carle (crazyman12).)
+   "Run anyway". The program isn't signed; its source is wsr_relay.c
+   in the same folder.)
 
 2. Let it through Windows Firewall
    Windows usually asks the first time. Tick "Private networks" and click
@@ -195,7 +207,7 @@ The game shows a small window that says what went wrong:
         new code each time.
 
   "The host has a different build"
-      - Everyone needs the exact same copy of the game folder. Share the
-        same zip with everyone.
+      - Everyone needs the same ResortRecomp version. Download the same
+        release and set it up again.
 
 Nobody else needs to forward anything: only the relay computer.

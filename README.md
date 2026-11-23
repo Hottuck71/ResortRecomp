@@ -21,6 +21,7 @@ By **Lane Carle (crazyman12)**.
    [DolRecomp](https://github.com/ExpansionPak/DolRecomp), and compiles it with the bundled GCC:
    about 10 minutes on a recent PC, up to 30 on an older one.
 4. Press **Play**.
+5. "note you can download the dolphin tool from the docs folder"
 
 On a slower PC, **Play > Speed > Start measuring**, play for 10 minutes, then **Finish**: the game is rebuilt
 tuned by how it ran on that PC (profile-guided optimization): about 35 to 65% faster in tests, most in the

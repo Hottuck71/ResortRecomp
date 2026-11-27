@@ -27,9 +27,10 @@
    SDL's: +x right, +y up out of the buttons, +z towards you, held as half of a pad) and then a Wii Remote's
    (+x to its left, +y towards its tip, +z up out of its buttons, as Dolphin's emulated remote). Accelerometer
    values are what it measures (1 g up at rest), 0x80 zero and 0x9A for 1 g in the top eight of ten bits, as
-   fake_remote.c's stand-in. MotionPlus rates follow Dolphin's emulated MotionPlus: each raw value is 8192 plus
-   the rate about that axis (pitch x, roll y, yaw z, by the right-hand rule in those axes), 20 counts a degree a
-   second in slow mode and 4.4 in fast, as motion_pointer.c and the stand-in's calibration expect.
+   fake_remote.c's stand-in. MotionPlus rates: each raw value is 8192 plus the rate about that axis (pitch x,
+   roll y, yaw z), 20 counts a degree a second in slow mode and 4.4 in fast, as motion_pointer.c and the
+   stand-in's calibration expect. Rates are worked out by the right-hand rule in those axes, then pitch and yaw
+   change sign as a real MotionPlus's do (make_sample): yaw rises turning left, pitch rises dipping the tip.
 
    Each Joy-Con has its own thread, so Bluetooth waits never hold up the game or each other, and a scanning thread
    finds new ones every two seconds. */
@@ -788,9 +789,13 @@ static void make_sample(const Device* d, const Frame* f, const Device* nd, const
     s->buttons = (u16)remote_buttons(d->right, sideways, f->buttons, f->sx, f->sy);
     wii_axes(d->right, sideways, f->accel, f->gyro, wa, wg);
     for (int a = 0; a < 3; a++) s->accel[a] = ten_bits(ACCEL_ZERO + wa[a] * ACCEL_PER_G);
-    s->gyro[0] = gyro_value(wg[2], &slow[0]); /* yaw */
-    s->gyro[1] = gyro_value(wg[1], &slow[1]); /* roll */
-    s->gyro[2] = gyro_value(wg[0], &slow[2]); /* pitch */
+    /* A MotionPlus doesn't follow the right-hand rule on two axes (as Dolphin notes, decoding a real one with signs
+       -1, +1, -1): its yaw value rises as the tip turns left and its pitch value as the tip dips, while roll rises
+       rolling left as the rule gives. Sending the rule's pitch and yaw turned the game's pointer and swings the
+       wrong way round, left for right and up for down. */
+    s->gyro[0] = gyro_value(-wg[2], &slow[0]); /* yaw */
+    s->gyro[1] = gyro_value(wg[1], &slow[1]);  /* roll */
+    s->gyro[2] = gyro_value(-wg[0], &slow[2]); /* pitch */
     s->gyro_flags = (u8)(SAMPLE_HAS_MOTION_PLUS | (slow[0] ? 1 : 0) | (slow[1] ? 2 : 0) | (slow[2] ? 4 : 0));
     s->dots[0][0] = s->dots[0][1] = s->dots[1][0] = s->dots[1][1] = NO_DOT;
     if (nd && nf) { /* the left Joy-Con as a Nunchuk, held upright as one */
@@ -1095,7 +1100,30 @@ int joycon_self_test(void) {
     make_sample(&right, &f, NULL, NULL, 0, &s);
     joycon_make_report(&s, r);
     u32 yaw = (u32)(r[16] | (r[19] >> 2) << 8);
-    failures += check("report carries MotionPlus data", r[0] == 0x37 && (r[21] & 3) == 2 && yaw == s.gyro[0] && yaw == 8192 + 1000);
+    failures += check("report carries MotionPlus data", r[0] == 0x37 && (r[21] & 3) == 2 && yaw == s.gyro[0] && yaw == 8192 - 1000);
+    /* Directions as a real MotionPlus gives them. A right Joy-Con upright: its z points down into its buttons, its
+       y to its right, so turning left (anticlockwise seen from above) is a negative z rate and tipping up a
+       positive y rate. A left Joy-Con: z up out of its buttons, y to its left. */
+    memset(&f, 0, sizeof f);
+    f.gyro[2] = -50.0f;
+    make_sample(&right, &f, NULL, NULL, 0, &s);
+    failures += check("right Joy-Con turned left: yaw rises", s.gyro[0] == 8192 + 1000 && s.gyro[2] == 8192);
+    memset(&f, 0, sizeof f);
+    f.gyro[1] = 50.0f;
+    make_sample(&right, &f, NULL, NULL, 0, &s);
+    failures += check("right Joy-Con tipped up: pitch falls", s.gyro[2] == 8192 - 1000 && s.gyro[0] == 8192);
+    memset(&f, 0, sizeof f);
+    f.gyro[2] = 50.0f;
+    make_sample(&left, &f, NULL, NULL, 0, &s);
+    failures += check("left Joy-Con turned left: yaw rises", s.gyro[0] == 8192 + 1000);
+    memset(&f, 0, sizeof f);
+    f.gyro[1] = -50.0f;
+    make_sample(&left, &f, NULL, NULL, 0, &s);
+    failures += check("left Joy-Con tipped up: pitch falls", s.gyro[2] == 8192 - 1000);
+    memset(&f, 0, sizeof f);
+    f.gyro[2] = -50.0f;
+    make_sample(&right, &f, NULL, NULL, 1, &s);
+    failures += check("right Joy-Con sideways, turned left: yaw still rises", s.gyro[0] == 8192 + 1000);
     {
         u8 m[4];
         rumble_bytes(0.0f, m);

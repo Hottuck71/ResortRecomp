@@ -373,7 +373,7 @@ u32 remote_driver_take_joycon(RemoteSample* out, u32 max, s32* plug) {
         RemoteSample* s = &out[i];
         u8 r[REMOTE_REPORT_SIZE];
         float x, y;
-        joycon_make_report(s, r);
+        joycon_pointer_report(0, i, s, r);
         int a_pressed = (s->buttons & 0x0008u) && !joycon_a_held;
         joycon_a_held = (s->buttons & 0x0008u) != 0;
         motion_pointer_feed(r, when[i]);

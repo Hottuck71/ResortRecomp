@@ -67,6 +67,10 @@
 #define GYRO_STILL_DPS 1.5f    /* spread over a window below this on every axis: held still, learn the zero */
 #define GYRO_STILL_SAMPLES 100u
 #define GYRO_STILL_LIMIT 12.0f /* a learned zero further off than this is no zero */
+#define ACCEL_STILL_G 0.05f    /* and the accelerometer within this: not turning slowly and smoothly */
+#define POINTER_KEEP 64u       /* samples whose pointer report joycon_pointer_report can give */
+#define POINTER_DT 0.005f      /* the IMU's samples are 5 ms apart */
+#define POINTER_GRAVITY_FOLLOW 0.02f
 
 /* The Joy-Con's buttons, as one number: report bytes 3 (right), 4 (shared), 5 (left). */
 #define J_Y 0x000001u
@@ -128,7 +132,10 @@ typedef struct {
     float accel_scale[3], gyro_scale[3];
     s16 gyro_offset[3];
     float gyro_zero[3];       /* learned while held still, on top of the factory offset */
-    float still_min[3], still_max[3], still_sum[3];
+    float still_min[3], still_max[3], still_sum[3], still_amin[3], still_amax[3];
+    /* the pointer's: which way is up, in the Wii Remote's axes, and the tip's elevation in degrees */
+    float up[3], elevation;
+    int up_known;
     u32 still_count, zeros_learned;
     /* shared with the game's threads, under lock */
     Frame queue[QUEUE];
@@ -150,6 +157,8 @@ typedef struct {
     int recentre_pending;
     u32 leds;
     int rumble;
+    u16 pointer_gyro[POINTER_KEEP][2]; /* the last joycon_take_at's samples, yaw and pitch turned to the room */
+    u8 pointer_slow[POINTER_KEEP];
 } Player;
 
 static CRITICAL_SECTION lock;
@@ -374,17 +383,21 @@ static float stick_axis(const Device* d, int raw, int a) {
     return (v - (v > 0 ? STICK_DEAD : -STICK_DEAD)) / (1.0f - STICK_DEAD);
 }
 
-/* Learns the gyro's zero whenever the Joy-Con sits still for half a second. */
-static void learn_zero(Device* d, const float* dps) {
+/* Learns the gyro's zero whenever the Joy-Con sits still for half a second: the gyro steady and gravity not moving
+   (a slow, smooth turn keeps the gyro steady too, but tips gravity). dps is before the learned zero comes off. */
+static void learn_zero(Device* d, const float* dps, const float* g) {
     if (!d->still_count)
         for (int a = 0; a < 3; a++) d->still_min[a] = d->still_max[a] = d->still_sum[a] = 0;
     for (int a = 0; a < 3; a++) {
         if (!d->still_count || dps[a] < d->still_min[a]) d->still_min[a] = dps[a];
         if (!d->still_count || dps[a] > d->still_max[a]) d->still_max[a] = dps[a];
+        if (!d->still_count || g[a] < d->still_amin[a]) d->still_amin[a] = g[a];
+        if (!d->still_count || g[a] > d->still_amax[a]) d->still_amax[a] = g[a];
         d->still_sum[a] += dps[a];
     }
     int moving = 0;
-    for (int a = 0; a < 3; a++) moving |= d->still_max[a] - d->still_min[a] > GYRO_STILL_DPS;
+    for (int a = 0; a < 3; a++)
+        moving |= d->still_max[a] - d->still_min[a] > GYRO_STILL_DPS || d->still_amax[a] - d->still_amin[a] > ACCEL_STILL_G;
     if (moving) {
         d->still_count = 0;
         return;
@@ -396,8 +409,10 @@ static void learn_zero(Device* d, const float* dps) {
         mean[a] = d->still_sum[a] / (float)d->still_count;
         sensible &= fabsf(mean[a]) < GYRO_STILL_LIMIT;
     }
+    /* The mean is the whole zero, not a correction to the last one: move halfway to it. (Adding half of it each time
+       made the zero grow with every rest, and the game saw a spin that got faster all session.) */
     if (sensible)
-        for (int a = 0; a < 3; a++) d->gyro_zero[a] += mean[a] * (d->zeros_learned ? 0.5f : 1.0f);
+        for (int a = 0; a < 3; a++) d->gyro_zero[a] += (mean[a] - d->gyro_zero[a]) * (d->zeros_learned ? 0.5f : 1.0f);
     d->zeros_learned++;
     d->still_count = 0;
 }
@@ -419,7 +434,7 @@ static void handle_frames(Device* d, const u8* r) {
             f.accel[a] = (float)s16_at(imu + a * 2) * d->accel_scale[a];
             raw_dps[a] = (float)(s16_at(imu + 6 + a * 2) - d->gyro_offset[a]) * d->gyro_scale[a];
         }
-        learn_zero(d, raw_dps);
+        learn_zero(d, raw_dps, f.accel);
         for (int a = 0; a < 3; a++) f.gyro[a] = raw_dps[a] - d->gyro_zero[a];
         f.when = now - 0.005 * k;
         EnterCriticalSection(&lock);
@@ -781,6 +796,39 @@ static u16 gyro_value(float dps, int* slow) {
     return (u16)lroundf(clampf(MP_ZERO + dps * (*slow ? MP_SLOW_COUNTS : MP_FAST_COUNTS), 0.0f, MP_MAX));
 }
 
+/* The pointer's turn rates, in degrees a second: left about the room's up, and the tip rising. A MotionPlus pointer
+   that adds up the remote's own yaw and pitch goes wrong once the remote is rolled (held sideways, as a sword often
+   is, a level swing is a pitch to the remote), and the game pulls its sword's heading towards the pointer's dots.
+   Up is gravity, followed with the gyro between samples and pulled back to the accelerometer while it reads about
+   1 g. In the Wii Remote's axes, by the right-hand rule (wii_axes): turning left is a negative rate about up. */
+static void pointer_rates(Device* d, const float* wa, const float* wg, float* left_dps, float* up_dps) {
+    const float to_rad = 3.14159265f / 180.0f;
+    float m = sqrtf(wa[0] * wa[0] + wa[1] * wa[1] + wa[2] * wa[2]);
+    *left_dps = *up_dps = 0;
+    if (!d->up_known) {
+        if (m < 0.5f) return;
+        for (int a = 0; a < 3; a++) d->up[a] = wa[a] / m;
+        d->elevation = asinf(clampf(d->up[1], -1.0f, 1.0f)) / to_rad;
+        d->up_known = 1;
+    }
+    float w[3] = {wg[0] * to_rad * POINTER_DT, wg[1] * to_rad * POINTER_DT, wg[2] * to_rad * POINTER_DT};
+    float* u = d->up;
+    float turn[3] = {w[1] * u[2] - w[2] * u[1], w[2] * u[0] - w[0] * u[2], w[0] * u[1] - w[1] * u[0]};
+    for (int a = 0; a < 3; a++) u[a] -= turn[a]; /* gravity turns against the remote: dv/dt = -w x v */
+    if (fabsf(m - 1.0f) < 0.15f)
+        for (int a = 0; a < 3; a++) u[a] += (wa[a] / m - u[a]) * POINTER_GRAVITY_FOLLOW;
+    float n = sqrtf(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
+    if (n < 1e-6f) {
+        d->up_known = 0;
+        return;
+    }
+    for (int a = 0; a < 3; a++) u[a] /= n;
+    *left_dps = -(wg[0] * u[0] + wg[1] * u[1] + wg[2] * u[2]);
+    float elevation = asinf(clampf(u[1], -1.0f, 1.0f)) / to_rad; /* the tip is +y */
+    *up_dps = (elevation - d->elevation) / POINTER_DT;
+    d->elevation = elevation;
+}
+
 static void make_sample(const Device* d, const Frame* f, const Device* nd, const Frame* nf, int sideways,
                         RemoteSample* s) {
     float wa[3], wg[3];
@@ -923,6 +971,7 @@ u32 joycon_take_at(int slot, RemoteSample* out, double* when, u32 max, s32* plug
                          (d->right ? (J_RSL | J_RSR) : (J_LSL | J_LSR));
         if (both_rails && !d->rails_held) {
             d->sideways = !d->sideways;
+            d->up_known = 0; /* its axes turned: find up again */
             fprintf(report, "Joy-Con %d: held %s\n", slot + 1, d->sideways ? "sideways" : "upright");
         }
         d->rails_held = both_rails;
@@ -931,6 +980,17 @@ u32 joycon_take_at(int slot, RemoteSample* out, double* when, u32 max, s32* plug
         if ((f.buttons & centre) && !(d->last_buttons & centre) && recentre) *recentre = 1;
         d->last_buttons = f.buttons;
         make_sample(d, &f, nd, nd ? &nd->latest : NULL, d->sideways, &out[n]);
+        {
+            float wa[3], wg[3], left, up;
+            int s0, s2;
+            wii_axes(d->right, d->sideways, f.accel, f.gyro, wa, wg);
+            pointer_rates(d, wa, wg, &left, &up);
+            if (n < POINTER_KEEP) { /* a MotionPlus pitch value rises as the tip dips */
+                pl->pointer_gyro[n][0] = gyro_value(left, &s0);
+                pl->pointer_gyro[n][1] = gyro_value(-up, &s2);
+                pl->pointer_slow[n] = (u8)((s0 ? 1 : 0) | (s2 ? 4 : 0));
+            }
+        }
         if (when) when[n] = f.when;
         n++;
     }
@@ -979,6 +1039,18 @@ void joycon_make_report(const RemoteSample* s, u8 out[22]) {
     out[19] = (u8)(((g[0] >> 8) << 2) | ((f & 1) << 1) | ((f >> 2) & 1));
     out[20] = (u8)(((g[1] >> 8) << 2) | (((f >> 1) & 1) << 1) | ((s->nunchuk_flags & SAMPLE_HAS_NUNCHUK) ? 1 : 0));
     out[21] = (u8)(((g[2] >> 8) << 2) | 2);
+}
+
+void joycon_pointer_report(int slot, u32 index, const RemoteSample* s, u8 out[22]) {
+    RemoteSample p = *s;
+    if (started && slot >= 0 && slot < JOYCON_SLOTS && index < POINTER_KEEP) {
+        EnterCriticalSection(&lock);
+        p.gyro[0] = players[slot].pointer_gyro[index][0];
+        p.gyro[2] = players[slot].pointer_gyro[index][1];
+        p.gyro_flags = (u8)((p.gyro_flags & ~5u) | players[slot].pointer_slow[index]);
+        LeaveCriticalSection(&lock);
+    }
+    joycon_make_report(&p, out);
 }
 
 void joycon_write_report(FILE* out) {
@@ -1124,6 +1196,47 @@ int joycon_self_test(void) {
     f.gyro[2] = -50.0f;
     make_sample(&right, &f, NULL, NULL, 1, &s);
     failures += check("right Joy-Con sideways, turned left: yaw still rises", s.gyro[0] == 8192 + 1000);
+    /* The gyro's zero, learned at every rest, settles on the real offset instead of growing with each rest. */
+    {
+        Device z;
+        float g[3] = {0, 0, -1.0f};
+        memset(&z, 0, sizeof z);
+        for (int i = 0; i < 1000; i++) {
+            float dps[3] = {3.0f + (float)(i % 3 - 1) * 0.2f, -2.0f, 1.0f};
+            learn_zero(&z, dps, g);
+        }
+        failures += check("gyro zero settles on the offset over many rests",
+                          z.zeros_learned >= 9 && fabsf(z.gyro_zero[0] - 3.0f) < 0.1f && fabsf(z.gyro_zero[1] + 2.0f) < 0.1f &&
+                              fabsf(z.gyro_zero[2] - 1.0f) < 0.1f);
+        memset(&z, 0, sizeof z);
+        for (int i = 0; i < 400; i++) { /* a slow, smooth 5 degrees a second: the gyro steady, gravity tipping */
+            float dps[3] = {5.0f, 0, 0}, tipped[3] = {0, sinf((float)i * 0.0015f), -cosf((float)i * 0.0015f)};
+            learn_zero(&z, dps, tipped);
+        }
+        failures += check("a slow smooth turn isn't taken for a rest", z.zeros_learned == 0);
+    }
+    /* The pointer turns with the room, however the Joy-Con is rolled. */
+    {
+        Device p;
+        float left = 0, up = 0, total_up = 0, total_left = 0;
+        float flat[3] = {0, 0, 1}, turn_left[3] = {0, 0, -50};
+        memset(&p, 0, sizeof p);
+        pointer_rates(&p, flat, turn_left, &left, &up);
+        failures += check("pointer: flat, turned left", fabsf(left - 50.0f) < 0.5f && fabsf(up) < 0.5f);
+        float rolled[3] = {1, 0, 0}, rolled_left[3] = {-50, 0, 0}; /* on its side: the room's up is its x */
+        memset(&p, 0, sizeof p);
+        for (int i = 0; i < 20; i++) pointer_rates(&p, rolled, rolled_left, &left, &up);
+        failures += check("pointer: rolled onto its side, turned left is still left, not down",
+                          fabsf(left - 50.0f) < 0.5f && fabsf(up) < 0.5f);
+        memset(&p, 0, sizeof p);
+        for (int i = 0; i < 40; i++) { /* tip up at 50 degrees a second for 0.2 s */
+            float a = (float)i * 50.0f * POINTER_DT * 3.14159265f / 180.0f, wa[3] = {0, sinf(a), cosf(a)}, wg[3] = {50.0f, 0, 0};
+            pointer_rates(&p, wa, wg, &left, &up);
+            total_up += up * POINTER_DT;
+            total_left += left * POINTER_DT;
+        }
+        failures += check("pointer: tipped up 10 degrees", fabsf(total_up - 10.0f) < 0.5f && fabsf(total_left) < 0.2f);
+    }
     {
         u8 m[4];
         rumble_bytes(0.0f, m);

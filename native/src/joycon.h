@@ -22,6 +22,10 @@ void joycon_output_at(int slot, u32 leds, int rumble); /* the game's player ligh
 void joycon_set_sideways(int on);
 /* A Wii Remote data report (mode 0x37) carrying this sample, for motion_pointer_feed. */
 void joycon_make_report(const RemoteSample* s, u8 out[22]);
+/* As joycon_make_report, for sample index of this player's last joycon_take_at, with its yaw and pitch turned to
+   the room (left about gravity, the tip's elevation), so motion_pointer.c's pointer stays right however the Joy-Con
+   is rolled. The sample the game gets keeps the Joy-Con's own rates. */
+void joycon_pointer_report(int slot, u32 index, const RemoteSample* s, u8 out[22]);
 void joycon_write_report(FILE* out);
 /* How many Joy-Cons Windows has connected as game devices, left and right, without opening them. */
 int joycon_scan_once(u32* left, u32* right);

@@ -46,6 +46,8 @@
 #define ZERO_FOLLOW 0.01f
 #define SIGN_EVIDENCE 400.0f      /* how much agreement before up and down is settled */
 #define MAX_LOGGED 12u
+#define LEVEL_FOLLOW 0.1f          /* gravity for the roll check, eased over a few samples */
+#define ROLLED_DEGREES 40.0f       /* rolled further than this, it shows no dots (see motion_pointer_get) */
 #define SETTINGS "analysis/native/pointer-settings.txt"
 
 static struct {
@@ -56,6 +58,8 @@ static struct {
     float last_accel_pitch, dt;
     double last_time;
     int have_accel_pitch, have_mean, zero_known, flipped, flipped_y, loaded;
+    float level[3]; /* the accelerometer, eased: which way is up */
+    int have_level, rolled;
     u32 still, steady, samples, rejected, still_samples, recentres, relearns, logged;
 } mp = {.zero = {GYRO_ZERO, GYRO_ZERO, GYRO_ZERO}, .pitch_sign = 1.0f, .yaw_sign = 1.0f, .dt = SAMPLE_SECONDS};
 
@@ -190,17 +194,24 @@ void motion_pointer_feed(const u8* report_bytes, double seconds) {
         }
         mp.last_accel_pitch = accel_pitch;
         mp.have_accel_pitch = 1;
+        float now[3] = {ax, ay, az};
+        for (int i = 0; i < 3; i++) mp.level[i] = mp.have_level ? mp.level[i] + (now[i] - mp.level[i]) * LEVEL_FOLLOW : now[i];
+        mp.have_level = 1;
+        /* Rolled: gravity well away from the buttons' side. Its sensor bar dots would be turned too, and the dots
+           made from this pointer never are, so the game would read them as the remote held level. */
+        float side = sqrtf(mp.level[0] * mp.level[0] + mp.level[2] * mp.level[2]);
+        mp.rolled = side > 13.0f && fabsf(atan2f(mp.level[0], mp.level[2])) * 57.2958f > ROLLED_DEGREES;
     }
 
     if (!mp.zero_known) return; /* with the zero unknown, any turn would come out wrong */
     mp.yaw += rate[0] * mp.dt * mp.yaw_sign;
     mp.pitch += rate[2] * mp.dt * mp.pitch_sign;
-    /* Keep it within reach of the screen, so turning far away and back returns to the same place. */
-    const float limit_x = HALF_WIDTH_DEGREES * 2.5f, limit_y = HALF_HEIGHT_DEGREES * 2.5f;
-    if (mp.yaw > limit_x) mp.yaw = limit_x;
-    if (mp.yaw < -limit_x) mp.yaw = -limit_x;
-    if (mp.pitch > limit_y) mp.pitch = limit_y;
-    if (mp.pitch < -limit_y) mp.pitch = -limit_y;
+    /* Not stopped at an edge: one that stopped while the remote turned on would point elsewhere than the remote
+       once it came back, and the game pulls its MotionPlus heading (a sword's, say) towards the pointer's dots. */
+    if (mp.yaw > 180.0f) mp.yaw -= 360.0f;
+    if (mp.yaw < -180.0f) mp.yaw += 360.0f;
+    if (mp.pitch > 90.0f) mp.pitch = 90.0f;
+    if (mp.pitch < -90.0f) mp.pitch = -90.0f;
 }
 
 int motion_pointer_get(float* x, float* y) {
@@ -209,7 +220,7 @@ int motion_pointer_get(float* x, float* y) {
     float px = -mp.yaw / HALF_WIDTH_DEGREES, py = (mp.flipped_y ? mp.pitch : -mp.pitch) / HALF_HEIGHT_DEGREES;
     *x = px;
     *y = py;
-    return fabsf(px) < ON_SCREEN && fabsf(py) < ON_SCREEN;
+    return fabsf(px) < ON_SCREEN && fabsf(py) < ON_SCREEN && !mp.rolled;
 }
 
 void motion_pointer_place(float x, float y) {
@@ -439,6 +450,35 @@ int motion_pointer_self_test(void) {
     printf("A before a rest: zero %.0f %.0f %.0f (want %.0f %.0f %.0f), still for 2 s moved %.4f %.4f\n", mp.zero[0],
            mp.zero[1], mp.zero[2], test_zero[0], test_zero[1], test_zero[2], x - x0, y - y0);
     if (fabsf(mp.zero[0] - test_zero[0]) > 10.0f || fabsf(x - x0) > 0.01f || fabsf(y - y0) > 0.01f) failures++;
+
+    /* Turned far round and back: the pointer comes back to the middle, as the remote did. */
+    reset_for_test(GYRO_ZERO, GYRO_ZERO, GYRO_ZERO);
+    for (int i = 0; i < 300; i++) {
+        make_report(r, 0, 0, 0, (i % 3) - 1);
+        feed(r, 0.005);
+    }
+    for (int i = 0; i < 400; i++) { /* 60 degrees right, then back */
+        make_report(r, i < 200 ? -60.0f : 60.0f, 0, 0, 0);
+        feed(r, 0.005);
+    }
+    int back = motion_pointer_get(&x, &y);
+    printf("turned 60 degrees away and back: pointer %.3f, on screen %d\n", x, back);
+    if (!back || fabsf(x) > 0.05f) failures++;
+    /* Rolled onto its side, its dots go (the game would read them as the remote held level), and come back. */
+    for (int i = 0; i < 60; i++) {
+        make_report(r, 0, 0, 0, (i % 3) - 1);
+        r[3] = 128 + 26;
+        r[5] = 128;
+        feed(r, 0.005);
+    }
+    int rolled_on = motion_pointer_get(&x, &y);
+    for (int i = 0; i < 60; i++) {
+        make_report(r, 0, 0, 0, (i % 3) - 1);
+        feed(r, 0.005);
+    }
+    int level_on = motion_pointer_get(&x, &y);
+    printf("rolled onto its side: on screen %d; level again: %d\n", rolled_on, level_on);
+    if (rolled_on || !level_on) failures++;
 
     printf("motion pointer self-test: %d failures\n", failures);
     return failures;

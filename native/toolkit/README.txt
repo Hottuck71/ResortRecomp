@@ -33,6 +33,22 @@ more in a few sports, close the game, and press "Finish". The game is built
 again, tuned by how it ran on your PC: about 35 to 65% faster in tests,
 most in the sports you played while measuring.
 
+CONTROLLERS
+-----------
+Wii Remote Plus (or a Wii Remote with MotionPlus): pair it once on the
+launcher's Wii Remote tab. Its Nunchuk works as on the Wii.
+
+Nintendo Switch Joy-Cons play instead of a Wii Remote: pair them once on the
+launcher's Joy-Con tab (hold the small sync button on the rail until the green
+lights move, then click "The lights are moving"). A Wii Remote is used first.
+  Right Joy-Con = the Wii Remote, held upright, top towards the screen:
+    A = A   ZR = B   stick = d-pad   Y = 1   B = 2   X = -   + = +
+    HOME = HOME   R or pressing the stick re-centres the pointer
+  Left Joy-Con = the Nunchuk: stick, ZL = Z, L = C
+  On its own a left Joy-Con is the Wii Remote (right arrow = A, ZL = B).
+  Swings, tilts and pointing come from the Joy-Con's motion sensors: no
+  sensor bar. SL and SR together switch a Joy-Con to sideways.
+
 ONLINE
 ------
 Everyone needs the same ResortRecomp version. See relay\SERVER-SETUP.txt to run
@@ -47,6 +63,7 @@ WHAT'S IN THIS FOLDER
 ---------------------
 Launcher.exe            the launcher
 PairRemote.exe          pairs a Wii Remote with Windows
+PairJoyCon.exe          pairs Nintendo Switch Joy-Cons with Windows
 builder\                the translator (DolRecomp), this project's runtime as
                         source, the graphics library, and a C compiler (GCC)
 relay\                  the online room server, and how to run it

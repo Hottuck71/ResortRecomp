@@ -10,7 +10,10 @@
    The stand-in has a Nunchuk to plug into its MotionPlus, as three sports need (Archery, Cycling, Power
    Cruising) and the game asks: N on the keyboard, plug in a script, and --nunchuk 1 starts with it in. The game
    asks for it to be taken out at the start, as it does on a Wii. A real remote's own Nunchuk needs nothing
-   here: its reports pass through. */
+   here: its reports pass through.
+
+   With no real remote, a Joy-Con (joycon.c) can be player 1: the stand-in replays its samples as it replays a real
+   remote's online, with the Joy-Con's calibration, and a left Joy-Con beside a right one is its Nunchuk. */
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +21,7 @@
 #include "motion_pointer.h"
 #include "real_remote.h"
 #include "remote_driver.h"
+#include "joycon.h"
 
 #define WUD_STATE 0x80717F48u    /* byte: 2 ready for callbacks, 3 running */
 #define WUD_RECV_CB 0x80717F2Cu
@@ -141,6 +145,9 @@ static int using_real;      /* the game is talking to a real remote, as player 1
 static int real_available;  /* real_remote.c is scanning */
 static u32 sim_from, sim_until; /* --sim-remote: pretend a remote exists between these fields */
 static u32 switches;
+static int using_joycon;     /* a Joy-Con is player 1, through the stand-in */
+static int joycon_available; /* joycon.c is looking */
+static u32 keyboard_buttons; /* the keyboard's, added to a Joy-Con's */
 /* Online play: this PC's script and keyboard go into local_step and local_live, then out as a RemoteInput, and
    every remote is built only from the inputs received for the field (fake_remote_apply_input). */
 static int net_mode;
@@ -498,6 +505,10 @@ static void output_report(const u8* r, u32 size) {
         break;
     }
     if (flags & 2) send_ack(id, 0);
+    if (using_joycon && R == remotes && size > 1 && (id == 0x11 || (flags & 1) != R->rumble_out)) {
+        R->rumble_out = (u8)(flags & 1);
+        joycon_output_at(0, R->leds, R->rumble_out); /* its player lights and rumble */
+    }
     if (net_mode && R->handle == net_me && remote_driver_ready() && size > 1 &&
         (id == 0x11 || (flags & 1) != R->rumble_out)) {
         R->rumble_out = (u8)(flags & 1);
@@ -522,6 +533,7 @@ void fake_remote_live(u32 buttons, float x, float y, int pointer, float pitch, f
     if (pressed & 0x20000u) motion_pointer_flip_x();
     if (pressed & 0x40000u) motion_pointer_flip_y();
     buttons &= 0xFFFFu;
+    if (!net_mode) keyboard_buttons = buttons | (keyboard_buttons & (BTN_C | BTN_Z));
     if (pointer && (x != mouse_last_x || y != mouse_last_y)) {
         mouse_window_x = x;
         mouse_window_y = y;
@@ -547,6 +559,7 @@ void fake_remote_live_nunchuk(float x, float y, int c, int z, float swing, int p
     live->ny = y;
     live->nbuttons = (c ? BTN_C : 0u) | (z ? BTN_Z : 0u);
     live->nswing = swing;
+    if (!net_mode) keyboard_buttons = (keyboard_buttons & 0xFFFFu) | live->nbuttons;
 }
 
 /* Gravity in the remote's frame, with a burst added during a swing. */
@@ -949,6 +962,8 @@ void fake_remote_apply_input(u32 player, const RemoteInput* in) {
 void fake_remote_use_real(void) {
     real_available = 1;
     real_remote_start();
+    joycon_available = 1;
+    joycon_start(1);
 }
 
 void fake_remote_simulate(u32 from_field, u32 until_field) {
@@ -976,6 +991,44 @@ static void forget_remote(void) {
     plain_extension_registers();
     R->connect_at = ticks + CONNECT_AFTER_TICKS;
     switches++;
+}
+
+/* Player 1's stand-in replays a Joy-Con's samples, read with its calibration, or goes back to its own. */
+static void use_joycon(int on) {
+    R = remotes;
+    using_joycon = on;
+    memset(&R->cal, 0, sizeof R->cal);
+    R->raw = 0;
+    write_accel_calibration(R->eeprom + 0x16);
+    write_accel_calibration(R->eeprom + 0x20);
+    if (on) {
+        joycon_calibration_at(0, &R->cal);
+        memcpy(R->eeprom + 0x16, R->cal.accel, 10);
+        memcpy(R->eeprom + 0x20, R->cal.accel, 10);
+        R->nunchuk = R->cal.nunchuk;
+        R->raw = 1;
+    }
+    R->pending_head = R->pending_tail = 0;
+    R->last_gyro_flags = R->last_nunchuk_flags = 0;
+    R->rumble_out = 0;
+    plain_extension_registers();
+    if (on) fprintf(report, "Remote: a Joy-Con is player 1, Nunchuk %s\n", R->nunchuk ? "in" : "out");
+}
+
+/* The Joy-Con's newest samples, to go out on the coming ticks, and the keyboard's buttons on top. */
+static void take_joycon_samples(void) {
+    R = remotes;
+    R->typed_buttons = keyboard_buttons;
+    if (!R->connected || R->pending_head != R->pending_tail) return;
+    RemoteSample got[MAX_SAMPLES];
+    s32 plug = -1;
+    u32 n = remote_driver_take_joycon(got, MAX_SAMPLES, &plug);
+    if (plug >= 0) plug_nunchuk(plug);
+    for (u32 i = 0; i < n; i++) {
+        R->pending[R->pending_tail % 32u] = got[i];
+        R->pending_tick[R->pending_tail % 32u] = ticks + got[i].offset;
+        R->pending_tail++;
+    }
 }
 
 /* With no sensor bar the remote sees no dots, so the mouse can still aim. */
@@ -1062,16 +1115,24 @@ int fake_remote_tick(CPUState* ctx) {
     }
     R = remotes;
     int wanted = real_wanted();
-    if (R->connected && wanted != using_real) { /* a real remote appeared or went away, for player 1 */
-        fprintf(report, "Remote: switching to %s at field %u\n", wanted ? "real remote" : "stand-in", host_field());
+    int joycon = !wanted && joycon_available && !sim_until && !net_mode && joycon_ready_at(0);
+    if (R->connected && (wanted != using_real || joycon != using_joycon)) { /* a real remote or Joy-Con came or went */
+        fprintf(report, "Remote: switching to %s at field %u\n",
+                wanted ? "real remote" : joycon ? "Joy-Con" : "stand-in", host_field());
         forget_remote();
         using_real = wanted;
+        use_joycon(joycon);
         return enter_connect(ctx, 0);
     }
+    if (using_joycon) take_joycon_samples();
     for (u32 i = 0; i < remote_count; i++) {
         R = &remotes[i];
         if (R->connected || ticks < R->connect_at) continue;
-        if (i == 0) using_real = wanted;
+        if (i == 0) {
+            using_real = wanted;
+            if (joycon != using_joycon) use_joycon(joycon);
+            R = &remotes[i];
+        }
         u8* device = plain_memory((SCRATCH_DEVICE + i * DEVICE_SIZE) & 0x3FFFFFFFu, DEVICE_SIZE);
         memset(device, 0, DEVICE_SIZE);
         memcpy(device, "Nintendo RVL-CNT-01", 19);
@@ -1159,6 +1220,7 @@ void fake_remote_write_report(void) {
         motion_pointer_write_report(report);
     }
     if (real_available) real_remote_write_report();
+    if (joycon_available) joycon_write_report(report);
     const u8* block = plain_memory(guest32(WPAD_CHANNELS) & 0x3FFFFFFFu, 0xBA8);
     if (block)
         fprintf(report,

@@ -15,13 +15,17 @@
 
    It runs on its own thread, so Bluetooth waits never hold up the game. A Nunchuk plugged in or out later is
    seen in the MotionPlus data's extension bit, and MotionPlus is switched over to match. With no sensor bar,
-   the dots come from the MotionPlus pointer (motion_pointer.c), or from the mouse while it moves. */
+   the dots come from the MotionPlus pointer (motion_pointer.c), or from the mouse while it moves.
+
+   With no Wii Remote, a Joy-Con (joycon.c) plays instead: it gives samples as a Wii Remote Plus would, with its own
+   fixed calibration, and the same pointer. A Wii Remote that's connected is waited for first. */
 #include <windows.h>
 #include <math.h>
 #include <string.h>
 #include "remote_driver.h"
 #include "motion_pointer.h"
 #include "real_remote.h"
+#include "joycon.h"
 
 #define STEP_WAIT_MS 700u
 #define QUEUE 128u
@@ -38,6 +42,8 @@ static volatile LONG ready, plug_event = -1, wanted_leds = 1, wanted_rumble;
 static int motion_plus, nunchuk_in, mode_set;
 static u32 samples, inits, plugs, step_timeouts, status_reports;
 static u8 sent_leds = 0xFF, sent_rumble;
+static int joycon_source; /* this PC's player is a Joy-Con, not a Wii Remote */
+static int joycon_a_held;
 
 /* ---- Talking to the remote ---- */
 
@@ -329,22 +335,64 @@ int remote_driver_start(u32 wait_ms, int simulated, int sim_nunchuk) {
     InitializeCriticalSection(&lock);
     if (simulated) real_remote_start_simulated(sim_nunchuk);
     else real_remote_start();
+    if (!simulated) joycon_start(1);
     CreateThread(NULL, 0, run, NULL, 0, NULL);
     DWORD until = GetTickCount() + wait_ms;
-    while (!ready && (LONG)(until - GetTickCount()) > 0) Sleep(20);
-    if (!ready) fprintf(report, "Remote driver: no Wii Remote ready within %u ms; the keyboard plays\n", wait_ms);
-    return ready != 0;
+    /* A Joy-Con plays only if no Wii Remote is connected: a connected one is waited for. */
+    while (!ready && (LONG)(until - GetTickCount()) > 0) {
+        if (!simulated && joycon_ready_at(0) && !real_remote_connected()) break;
+        Sleep(20);
+    }
+    if (!ready && !simulated && joycon_ready_at(0)) {
+        joycon_source = 1;
+        fprintf(report, "Remote driver: no Wii Remote; a Joy-Con plays\n");
+    }
+    if (!ready && !joycon_source)
+        fprintf(report, "Remote driver: no Wii Remote or Joy-Con ready within %u ms; the keyboard plays\n", wait_ms);
+    return ready != 0 || joycon_source;
 }
 
-int remote_driver_ready(void) { return ready != 0; }
+int remote_driver_ready(void) { return joycon_source ? joycon_ready_at(0) : ready != 0; }
 
 void remote_driver_calibration(RemoteCalibration* out) {
-    if (ready) *out = cal;
+    if (joycon_source) joycon_calibration_at(0, out);
+    else if (ready) *out = cal;
     else memset(out, 0, sizeof *out);
+}
+
+/* The Joy-Con's samples, with sensor bar dots as for a real remote with no sensor bar: the mouse while it moves,
+   else its MotionPlus pointer, and A pressed with nothing on the screen centres that pointer. Single play
+   (fake_remote.c) uses it too. */
+u32 remote_driver_take_joycon(RemoteSample* out, u32 max, s32* plug) {
+    double when[64];
+    int recentre = 0;
+    if (max > 64) max = 64;
+    u32 n = joycon_take_at(0, out, when, max, plug, &recentre);
+    if (recentre) motion_pointer_recentre();
+    for (u32 i = 0; i < n; i++) {
+        RemoteSample* s = &out[i];
+        u8 r[REMOTE_REPORT_SIZE];
+        float x, y;
+        joycon_make_report(s, r);
+        int a_pressed = (s->buttons & 0x0008u) && !joycon_a_held;
+        joycon_a_held = (s->buttons & 0x0008u) != 0;
+        motion_pointer_feed(r, when[i]);
+        if (fake_remote_mouse_pointer(&x, &y)) {
+            motion_pointer_place(x, y);
+            fake_remote_dots_for(x, y, s->dots);
+        } else if (motion_pointer_get(&x, &y)) {
+            fake_remote_dots_for(x, y, s->dots);
+        } else if (a_pressed) {
+            motion_pointer_calibrate();
+            fake_remote_dots_for(0, 0, s->dots);
+        }
+    }
+    return n;
 }
 
 u32 remote_driver_take(RemoteSample* out, u32 max, s32* plug) {
     u32 n = 0;
+    if (joycon_source) return remote_driver_take_joycon(out, max, plug);
     *plug = InterlockedExchange(&plug_event, -1);
     if (!ready) return 0;
     EnterCriticalSection(&lock);
@@ -362,12 +410,14 @@ u32 remote_driver_take(RemoteSample* out, u32 max, s32* plug) {
 void remote_driver_output(u32 leds, int rumble) {
     InterlockedExchange(&wanted_leds, (LONG)(leds & 15u));
     InterlockedExchange(&wanted_rumble, rumble ? 1 : 0);
+    if (joycon_source) joycon_output_at(0, leds, rumble);
 }
 
 void remote_driver_write_report(FILE* out) {
     fprintf(out, "remote driver: %s, %u set-ups, %u samples, %u dropped, %u Nunchuk changes, %u status reports, "
                  "%u timed-out steps\n",
             ready ? "ready" : "not ready", inits, samples, dropped, plugs, status_reports, step_timeouts);
+    if (joycon_source) joycon_write_report(out);
 }
 
 /* --test-remote-driver: sets up the simulated remote and checks what comes back. */

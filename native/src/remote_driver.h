@@ -16,6 +16,9 @@ u32 remote_driver_take(RemoteSample* out, u32 max, s32* plug);
 /* The game's player lights and rumble for this PC's stand-in, passed on to the real remote. */
 void remote_driver_output(u32 leds, int rumble);
 void remote_driver_write_report(FILE* out);
+/* A Joy-Con as this PC's remote (joycon.c, player 1), with its pointer's dots: online when no Wii Remote is
+   there, and single play. */
+u32 remote_driver_take_joycon(RemoteSample* out, u32 max, s32* plug);
 int remote_driver_self_test(void); /* --test-remote-driver: against the simulated remote */
 
 #endif

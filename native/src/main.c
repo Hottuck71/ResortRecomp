@@ -16,6 +16,7 @@
 #include "net.h"
 #include "net_status.h"
 #include "remote_driver.h"
+#include "joycon.h"
 #include <stdatomic.h>
 
 #define TB_DIVIDER 12u /* 729 MHz CPU, 60.75 MHz timebase */
@@ -1136,6 +1137,9 @@ int main(int argc, char** argv) {
     const char* net_join = NULL;
     const char* net_relay = NULL; /* --net-relay name[:port]: rooms through a relay server */
     const char* net_host_room = NULL, *net_join_room = NULL;
+    /* Read by SDL when the window starts it: Joy-Cons are joycon.c's to drive, not SDL's gamepad code's (both
+       talking to one would fight over its report mode and rumble). */
+    _putenv("SDL_JOYSTICK_HIDAPI_JOY_CONS=0");
     for (int i = 1; i + 1 < argc; i += 2) {
         if (!strcmp(argv[i], "--game")) game = argv[i + 1];
         else if (!strcmp(argv[i], "--report")) report_path = argv[i + 1];
@@ -1170,6 +1174,7 @@ int main(int argc, char** argv) {
             extern int fast_nan_trace;
             fast_nan_trace = atoi(argv[i + 1]);
         }
+        else if (!strcmp(argv[i], "--test-joycon")) return joycon_self_test() ? 1 : 0; /* Joy-Con conversions, then exits */
         else if (!strcmp(argv[i], "--test-motion-pointer")) { /* checks motion_pointer.c, then exits */
             int motion_pointer_self_test(void);
             return motion_pointer_self_test() ? 1 : 0;

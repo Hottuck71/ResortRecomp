@@ -4,6 +4,7 @@
 //            from your own Dolphin, and its main.dol must match the one this build was translated from.
 // Mii Maker: edits the Mii database in the game's save folder, which the game shows as its Miis.
 // Wii Remote: pairs a Wii Remote with Windows through PairRemote.exe, and checks one is connected.
+// Joy-Con:   pairs Nintendo Switch Joy-Cons through PairJoyCon.exe, tests them, and shows which are connected.
 // Online:    hosts a room, or joins one by its code, directly or through a relay server. See docs/12-launcher.md.
 // Graphics:  quality settings, with presets for slower PCs.
 // About:     who made the launcher, its version, credits, and the light or dark look.
@@ -39,6 +40,7 @@
 #include "mii_maker.h"
 #include "mii_render.h"
 #include "remote_tab.h"
+#include "joycon_tab.h"
 #include "room_code.h"
 
 namespace fs = std::filesystem;
@@ -934,15 +936,16 @@ int main(int argc, char** argv) {
                         std::string name = shot_page < mii_maker_pages() ? "mii-maker-" + std::to_string(shot_page)
                                          : shot_page == mii_maker_pages() ? std::string("online")
                                          : shot_page == mii_maker_pages() + 1 ? std::string("graphics")
-                                         : shot_page == mii_maker_pages() + 2 ? std::string("about-light") : std::string("about-dark");
+                                         : shot_page == mii_maker_pages() + 2 ? std::string("about-light")
+                                         : shot_page == mii_maker_pages() + 3 ? std::string("about-dark") : std::string("joycon");
                         std::string out = std::string(argv[2]) + "/" + name + ".bmp";
                         SDL_SaveBMP(pixels, out.c_str());
                         SDL_DestroySurface(pixels);
                     }
                 }
-                if (++shot_page >= mii_maker_pages() + 4) break; /* then Online, Graphics, About light and dark */
+                if (++shot_page >= mii_maker_pages() + 5) break; /* then Online, Graphics, About light and dark, Joy-Con */
                 if (shot_page >= mii_maker_pages() + 2) {
-                    g_settings["theme"] = shot_page == mii_maker_pages() + 2 ? "1" : "2"; /* not saved */
+                    g_settings["theme"] = shot_page == mii_maker_pages() + 3 ? "2" : "1"; /* not saved */
                     apply_theme(window);
                 }
                 if (shot_page < mii_maker_pages()) mii_maker_show(argv[3], shot_page);
@@ -986,6 +989,10 @@ int main(int argc, char** argv) {
                 remote_tab(g_dir, play_folder());
                 ImGui::EndTabItem();
             }
+            if (ImGui::BeginTabItem("Joy-Con", nullptr, pick(shot_page == pages + 4))) {
+                joycon_tab(g_dir, play_folder());
+                ImGui::EndTabItem();
+            }
             if (ImGui::BeginTabItem("Online", nullptr, pick(shot_page == pages))) {
                 online_tab();
                 ImGui::EndTabItem();
@@ -994,7 +1001,7 @@ int main(int argc, char** argv) {
                 graphics_tab();
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("About", nullptr, pick(shot_page >= pages + 2))) {
+            if (ImGui::BeginTabItem("About", nullptr, pick(shot_page == pages + 2 || shot_page == pages + 3))) {
                 about_tab(window);
                 ImGui::EndTabItem();
             }

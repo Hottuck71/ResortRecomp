@@ -32,9 +32,10 @@ sports played while measuring.
 
 - **Wii Remote Plus** (or a Wii Remote with a MotionPlus), paired once on the launcher's Wii Remote tab. Its
   Nunchuk works as on the Wii. No sensor bar needed: the pointer comes from the gyro.
-- **Nintendo Switch Joy-Cons**, instead of a Wii Remote. Pair them with Windows once (hold the small sync button
-  on the Joy-Con's rail until its lights run, then **Settings > Bluetooth & devices > Add device**). The game
-  picks them up by itself; a connected Wii Remote is used first.
+- **Nintendo Switch Joy-Cons**, instead of a Wii Remote. Pair them once on the launcher's **Joy-Con** tab (its
+  own tab, apart from the Wii Remote one): hold the small sync button on the Joy-Con's rail until its green
+  lights move, click **The lights are moving**, and it pairs both Joy-Cons and tests their lights, rumble,
+  buttons and motion sensor. The game picks them up by itself; a connected Wii Remote is used first.
   - **Right Joy-Con = Wii Remote.** Hold it upright like a Wii Remote, top towards the screen. A = A, ZR = B,
     stick = d-pad, Y = 1, B = 2, X = −, + = +, HOME = HOME. R or pressing the stick re-centres the pointer. Its
     gyro and accelerometer are the remote's MotionPlus and motion, so swings, tilts and pointing all work.

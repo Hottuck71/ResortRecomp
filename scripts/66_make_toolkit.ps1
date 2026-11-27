@@ -29,7 +29,7 @@ if (-not $DolRecomp) { $DolRecomp = Join-Path $tools 'DolRecomp' }
 if (-not $Aurora) { $Aurora = Join-Path $tools 'aurora' }
 $dest = Join-Path $root $Out
 $work = Join-Path $root 'exports\toolkit-work'
-foreach ($need in "$build\Launcher.exe", "$build\PairRemote.exe", "$build\aurora.rsp", "$build\obj\host_aurora_glue.o", "$DolRecomp\src\cpu\cpu.h") {
+foreach ($need in "$build\Launcher.exe", "$build\PairRemote.exe", "$build\PairJoyCon.exe", "$build\aurora.rsp", "$build\obj\host_aurora_glue.o", "$DolRecomp\src\cpu\cpu.h") {
     if (-not (Test-Path $need)) { throw "Missing ${need}: build the launcher and game first (see the top of this script)" }
 }
 $env:MSYSTEM = 'UCRT64'
@@ -93,7 +93,7 @@ foreach ($f in Get-Content "$work\toolchain-files.txt") {
 }
 
 # 5. The programs, their libraries, and the rest of what a player gets.
-Copy-Item "$build\Launcher.exe", "$build\PairRemote.exe", "$build\*.dll" $dest
+Copy-Item "$build\Launcher.exe", "$build\PairRemote.exe", "$build\PairJoyCon.exe", "$build\*.dll" $dest
 foreach ($dll in $runtimeDlls) { Copy-Item $dll $dest -Force }
 foreach ($dll in 'libstdc++-6.dll', 'libgcc_s_seh-1.dll', 'libwinpthread-1.dll') { Copy-Item "$Msys\ucrt64\bin\$dll" $dest -Force }
 Copy-Item "$build\nand-template" $dest -Recurse

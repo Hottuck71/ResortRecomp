@@ -25,7 +25,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-toolkit.ps1 -Version 1.0.
 
 1. `scripts\45_make_nand.py` writes the console-settings files new saves start from, from public formats.
 2. `scripts\48_build_aurora.ps1` applies `native\patches\aurora-*.patch` and builds aurora.
-3. `scripts\41_build_native.ps1 -Target toolkit-parts` builds `Launcher.exe`, `PairRemote.exe`, and the graphics
+3. `scripts\41_build_native.ps1 -Target toolkit-parts` builds `Launcher.exe`, `PairRemote.exe`, `PairJoyCon.exe`, and the graphics
    glue (`native\src\aurora_glue.cpp`).
 4. `scripts\66_make_toolkit.ps1` builds DolRecomp with GCC (with `native\patches\dolrecomp-direct-calls.patch`),
    copies the runtime's C source, the prebuilt graphics library, the GCC toolchain from MSYS2, the relay, and

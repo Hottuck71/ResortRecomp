@@ -550,12 +550,12 @@ static void open_device(const char* path, int right) {
     d->thread = CreateThread(NULL, 0, run, d, 0, NULL);
 }
 
-static void scan(void) {
+/* Calls found for each Joy-Con among the HID devices. skip_known: not the ones open or recently failed. */
+static void each_joycon(int skip_known, void (*found)(const char* path, int right, void* arg), void* arg) {
     GUID guid;
     HidD_GetHidGuid(&guid);
     HDEVINFO list = SetupDiGetClassDevsA(&guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     if (list == INVALID_HANDLE_VALUE) return;
-    scans++;
     for (DWORD i = 0;; i++) {
         SP_DEVICE_INTERFACE_DATA item;
         char buffer[1024];
@@ -564,7 +564,8 @@ static void scan(void) {
         if (!SetupDiEnumDeviceInterfaces(list, NULL, &guid, i, &item)) break;
         detail->cbSize = sizeof *detail;
         if (!SetupDiGetDeviceInterfaceDetailA(list, &item, detail, sizeof buffer, NULL, NULL)) continue;
-        if (open_already(detail->DevicePath) || recently_failed(detail->DevicePath)) continue;
+        if (skip_known && (open_already(detail->DevicePath) || recently_failed(detail->DevicePath))) continue;
+        /* Opening with no access is enough to read the IDs, and works for devices others hold. */
         HANDLE probe = CreateFileA(detail->DevicePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         if (probe == INVALID_HANDLE_VALUE) continue;
         HIDD_ATTRIBUTES attributes;
@@ -572,9 +573,32 @@ static void scan(void) {
         int ok = HidD_GetAttributes(probe, &attributes) && attributes.VendorID == NINTENDO_VENDOR &&
                  (attributes.ProductID == JOYCON_LEFT_PRODUCT || attributes.ProductID == JOYCON_RIGHT_PRODUCT);
         CloseHandle(probe);
-        if (ok) open_device(detail->DevicePath, attributes.ProductID == JOYCON_RIGHT_PRODUCT);
+        if (ok) found(detail->DevicePath, attributes.ProductID == JOYCON_RIGHT_PRODUCT, arg);
     }
     SetupDiDestroyDeviceInfoList(list);
+}
+
+static void found_new(const char* path, int right, void* arg) {
+    (void)arg;
+    open_device(path, right);
+}
+
+static void scan(void) {
+    scans++;
+    each_joycon(1, found_new, NULL);
+}
+
+static void count_one(const char* path, int right, void* arg) {
+    (void)path;
+    ((u32*)arg)[right ? 1 : 0]++;
+}
+
+int joycon_scan_once(u32* left, u32* right) {
+    u32 counts[2] = {0, 0};
+    each_joycon(0, count_one, counts);
+    if (left) *left = counts[0];
+    if (right) *right = counts[1];
+    return (int)(counts[0] + counts[1]);
 }
 
 /* Who plays as whom. Players keep their Joy-Con while it's connected. With pair_mode, player 1 is the first right

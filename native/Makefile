@@ -42,19 +42,23 @@ all: $(OUT)/WiiSportsResort-Native.exe pair
 toolkit-parts: launcher $(GLUE_OBJ)
 
 # Separate from the game, so the game never depends on the Bluetooth pairing library.
-pair: $(OUT)/PairRemote.exe
+pair: $(OUT)/PairRemote.exe $(OUT)/PairJoyCon.exe
 
 $(OUT)/PairRemote.exe: tools/pair_remote.c src/real_remote.c src/real_remote.h
 	$(CC) -O2 -Wall -Isrc tools/pair_remote.c src/real_remote.c -o $@ -static-libgcc -lbthprops -lhid -lsetupapi
+
+# Pairs and tests Nintendo Switch Joy-Cons, with the game's own Joy-Con code (src/joycon.c).
+$(OUT)/PairJoyCon.exe: tools/pair_joycon.c src/joycon.c src/joycon.h src/remote_sample.h
+	$(CC) -O2 -Wall -Isrc tools/pair_joycon.c src/joycon.c -o $@ -static-libgcc -lbthprops -lhid -lsetupapi -lm
 
 # The launcher: disc setup, Mii Maker, and online rooms. Dear ImGui and SDL3 come from aurora's build.
 IMGUI := $(AURORA_BUILD)/_deps/imgui-src
 SDL3_DIR := $(AURORA_BUILD)/_deps/sdl3_prebuilt-src
 LAUNCHER_SRCS := launcher/launcher.cpp launcher/mii_db.cpp launcher/mii_maker.cpp launcher/mii_render.cpp \
-	launcher/room_code.cpp launcher/remote_tab.cpp launcher/builder.cpp \
+	launcher/room_code.cpp launcher/remote_tab.cpp launcher/joycon_tab.cpp launcher/builder.cpp \
 	$(IMGUI)/imgui.cpp $(IMGUI)/imgui_draw.cpp $(IMGUI)/imgui_tables.cpp $(IMGUI)/imgui_widgets.cpp \
 	$(IMGUI)/backends/imgui_impl_sdl3.cpp $(IMGUI)/backends/imgui_impl_sdlrenderer3.cpp
-launcher: $(OUT)/Launcher.exe $(OUT)/PairRemote.exe
+launcher: $(OUT)/Launcher.exe $(OUT)/PairRemote.exe $(OUT)/PairJoyCon.exe
 
 # The Mii art (scripts/59_export_mii_art.py) is one big array, built on its own so it compiles once.
 $(OUT)/obj-launcher/mii_art.o: launcher/mii_art.cpp
@@ -66,15 +70,20 @@ $(OUT)/obj-launcher/real_remote.o: src/real_remote.c src/real_remote.h
 	mkdir -p $(OUT)/obj-launcher
 	$(CC) -O2 -Wall -Isrc -c $< -o $@
 
+# The Joy-Con tab counts connected Joy-Cons with the game's own Joy-Con code.
+$(OUT)/obj-launcher/joycon.o: src/joycon.c src/joycon.h src/remote_sample.h
+	mkdir -p $(OUT)/obj-launcher
+	$(CC) -O2 -Wall -Isrc -c $< -o $@
+
 # Version details (author, version) shown under Properties > Details.
 $(OUT)/obj-launcher/launcher_rc.o: launcher/launcher.rc
 	mkdir -p $(OUT)/obj-launcher
 	windres $< -O coff -o $@
 
 $(OUT)/Launcher.exe: $(LAUNCHER_SRCS) launcher/mii_db.h launcher/mii_maker.h launcher/mii_render.h launcher/room_code.h \
-		launcher/remote_tab.h launcher/builder.h $(OUT)/obj-launcher/real_remote.o $(OUT)/obj-launcher/mii_art.o $(OUT)/obj-launcher/launcher_rc.o
+		launcher/remote_tab.h launcher/joycon_tab.h launcher/builder.h $(OUT)/obj-launcher/real_remote.o $(OUT)/obj-launcher/joycon.o $(OUT)/obj-launcher/mii_art.o $(OUT)/obj-launcher/launcher_rc.o
 	$(CXX) -std=c++17 -O2 -Wall -Ilauncher -Isrc -I$(IMGUI) -I$(IMGUI)/backends -I$(SDL3_DIR)/include $(LAUNCHER_SRCS) \
-		$(OUT)/obj-launcher/real_remote.o $(OUT)/obj-launcher/mii_art.o $(OUT)/obj-launcher/launcher_rc.o \
+		$(OUT)/obj-launcher/real_remote.o $(OUT)/obj-launcher/joycon.o $(OUT)/obj-launcher/mii_art.o $(OUT)/obj-launcher/launcher_rc.o \
 		$(SDL3_DIR)/bin/SDL3.dll -o $@ -mwindows -static-libgcc -static-libstdc++ -lws2_32 -lbcrypt -lhid -lsetupapi -ldwmapi
 	mkdir -p $(OUT)/licenses
 	cp launcher/third_party/myavatareditor/License.txt $(OUT)/licenses/MyAvatarEditor.txt

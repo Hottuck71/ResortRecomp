@@ -84,6 +84,8 @@ static int reply_for(const u8* r, const void* arg) { return (u32)((r[4] << 8) | 
 static int ack_for(const u8* r, const void* arg) { (void)arg; return r[3] == 0x16; }
 
 /* Reads memory: space 0 is EEPROM, 4 the registers. Replies come 16 bytes at a time. */
+static volatile u8 last_read_error; /* the error code of the last memory read that failed, for the report */
+
 static int read_memory(u32 space, u32 address, u8* out, u32 size) {
     const u8 ask[7] = {0x17, (u8)space, (u8)(address >> 16), (u8)(address >> 8), (u8)address, (u8)(size >> 8), (u8)size};
     u8 r[REMOTE_REPORT_SIZE];
@@ -91,7 +93,10 @@ static int read_memory(u32 space, u32 address, u8* out, u32 size) {
     for (u32 done = 0; done < size;) {
         u32 at = (address + done) & 0xFFFFu;
         if (!wait_report(0x21, r, STEP_WAIT_MS, reply_for, &at)) return 0;
-        if (r[3] & 0x0Fu) return 0; /* nothing there */
+        if (r[3] & 0x0Fu) { /* nothing there */
+            last_read_error = (u8)(r[3] & 0x0Fu);
+            return 0;
+        }
         u32 step = (r[3] >> 4) + 1u;
         if (step > size - done) step = size - done;
         memcpy(out + done, r + 6, step);
@@ -155,17 +160,25 @@ static int start_motion_plus(int with_nunchuk) {
     return 0;
 }
 
-/* An inactive MotionPlus answers at 0xA6 with its ID. Some only do once woken by 0x55 at 0xA600F0, so ask again
-   after that before deciding there is none. */
+/* A switched-off MotionPlus answers at 0xA6 with an ID ending in 05 (the game checks those last two bytes, at
+   0xA600FE). Some don't straight after connecting, or only once woken by 0x55 at 0xA600F0, so keep asking for
+   MP_FIND_MS, both ways. (Requiring the whole ID and giving up after two tries missed a Wii Remote Plus's: it then
+   played online with no MotionPlus.) What was read last goes in the report if none answers. */
+#define MP_FIND_MS 1500u
 static int motion_plus_there(void) {
-    u8 id[6];
-    for (int tries = 0; tries < 2; tries++) {
-        if (read_memory(4, 0xA600FAu, id, 6) && id[2] == 0xA6 && id[3] == 0x20 && id[5] == 0x05) return 1;
-        if (!tries) {
-            write_byte(0x04A600F0u, 0x55);
-            settle(100);
-        }
+    u8 id[6], end[2];
+    DWORD until = GetTickCount() + MP_FIND_MS;
+    memset(id, 0, sizeof id);
+    memset(end, 0, sizeof end);
+    for (int tries = 0;; tries++) {
+        if (read_memory(4, 0xA600FAu, id, 6) && id[5] == 0x05) return 1;
+        if (read_memory(4, 0xA600FEu, end, 2) && end[1] == 0x05) return 1;
+        if ((LONG)(until - GetTickCount()) <= 0) break;
+        if (tries % 3 == 0) write_byte(0x04A600F0u, 0x55);
+        settle(100);
     }
+    fprintf(report, "Remote driver: no MotionPlus answered at 0xA6 (ID %02X %02X %02X %02X %02X %02X, end %02X %02X, "
+                    "last read error %u)\n", id[0], id[1], id[2], id[3], id[4], id[5], end[0], end[1], last_read_error);
     return 0;
 }
 
@@ -197,6 +210,10 @@ static int set_up(void) {
     /* A MotionPlus left on from before answers at 0xA4 and not 0xA6: switch it off first. */
     if (read_memory(4, 0xA400FAu, id, 6) && id[2] == 0xA4 && id[3] == 0x20 && id[5] == 0x05) stop_motion_plus();
     motion_plus = motion_plus_there();
+    if (!motion_plus && real_remote_is_plus()) { /* a Wii Remote Plus has one inside: switching it on shows whether it answers */
+        fprintf(report, "Remote driver: a Wii Remote Plus, so switching its MotionPlus on anyway\n");
+        motion_plus = 1;
+    }
     status_flags(&flags);
     nunchuk_in = (flags & 2) ? start_nunchuk() : 0;
     if (motion_plus && !start_motion_plus(nunchuk_in)) motion_plus = 0;

@@ -30,6 +30,8 @@
 #define STEP_WAIT_MS 700u
 #define QUEUE 128u
 #define FIELD_MS 16u
+#define SETUP_WAIT_MS 10000u /* online: more time for a connected Wii Remote to finish setting up */
+#define JOYCON_AFTER_MS 2500u /* online: a Joy-Con plays if no Wii Remote has connected by then */
 #define PLUG_CONFIRM 12u /* MotionPlus samples in a row before an extension change counts */
 
 extern FILE* report;
@@ -137,12 +139,33 @@ static int start_nunchuk(void) {
     return 1;
 }
 
-/* MotionPlus on, passing the Nunchuk through if there is one, and its calibration. */
+/* MotionPlus on, passing the Nunchuk through if there is one, and its calibration. A real MotionPlus takes a moment
+   to come up once it's switched on (the game waits for the status report saying it's there) and answers reads with
+   an error until then, so keep trying for MP_START_MS. Three tries straight away gave up within milliseconds: the
+   remote then played online as one with no MotionPlus, and the other players' games saw no swings or turns. */
+#define MP_START_MS 2500u
 static int start_motion_plus(int with_nunchuk) {
     if (!write_byte(0x04A600F0u, 0x55) || !write_byte(0x04A600FEu, with_nunchuk ? 0x05 : 0x04)) return 0;
-    settle(150);
-    for (int tries = 0; tries < 3; tries++)
+    DWORD until = GetTickCount() + MP_START_MS;
+    do {
+        settle(100);
         if (read_memory(4, 0xA40020u, cal.gyro, 32)) return 1;
+    } while ((LONG)(until - GetTickCount()) > 0);
+    fprintf(report, "Remote driver: MotionPlus didn't come up within %u ms\n", MP_START_MS);
+    return 0;
+}
+
+/* An inactive MotionPlus answers at 0xA6 with its ID. Some only do once woken by 0x55 at 0xA600F0, so ask again
+   after that before deciding there is none. */
+static int motion_plus_there(void) {
+    u8 id[6];
+    for (int tries = 0; tries < 2; tries++) {
+        if (read_memory(4, 0xA600FAu, id, 6) && id[2] == 0xA6 && id[3] == 0x20 && id[5] == 0x05) return 1;
+        if (!tries) {
+            write_byte(0x04A600F0u, 0x55);
+            settle(100);
+        }
+    }
     return 0;
 }
 
@@ -173,7 +196,7 @@ static int set_up(void) {
     if (!read_memory(0, 0x16u, cal.accel, 10)) return 0;
     /* A MotionPlus left on from before answers at 0xA4 and not 0xA6: switch it off first. */
     if (read_memory(4, 0xA400FAu, id, 6) && id[2] == 0xA4 && id[3] == 0x20 && id[5] == 0x05) stop_motion_plus();
-    motion_plus = read_memory(4, 0xA600FAu, id, 6) && id[2] == 0xA6 && id[3] == 0x20 && id[5] == 0x05;
+    motion_plus = motion_plus_there();
     status_flags(&flags);
     nunchuk_in = (flags & 2) ? start_nunchuk() : 0;
     if (motion_plus && !start_motion_plus(nunchuk_in)) motion_plus = 0;
@@ -339,10 +362,16 @@ int remote_driver_start(u32 wait_ms, int simulated, int sim_nunchuk) {
     else real_remote_start();
     if (!simulated) joycon_start(1);
     CreateThread(NULL, 0, run, NULL, 0, NULL);
-    DWORD until = GetTickCount() + wait_ms;
-    /* A Joy-Con plays only if no Wii Remote is connected: a connected one is waited for. */
-    while (!ready && (LONG)(until - GetTickCount()) > 0) {
-        if (!simulated && joycon_ready_at(0) && !real_remote_connected()) break;
+    /* Its calibration goes to the other players when this one joins, and a remote that wasn't ready by then plays
+       online with none: every other game ignores its motion all session. So a connected Wii Remote is waited for
+       until it is set up (switching MotionPlus on takes a moment), up to SETUP_WAIT_MS more. A Joy-Con plays only if
+       no Wii Remote has connected after JOYCON_AFTER_MS (Windows finds a Wii Remote within about two seconds). */
+    DWORD start = GetTickCount();
+    while (!ready) {
+        DWORD spent = GetTickCount() - start;
+        int remote = simulated || real_remote_connected();
+        if (spent >= wait_ms && !(remote && spent < wait_ms + SETUP_WAIT_MS)) break;
+        if (!simulated && !remote && spent >= JOYCON_AFTER_MS && joycon_ready_at(0)) break;
         Sleep(20);
     }
     if (!ready && !simulated && joycon_ready_at(0)) {

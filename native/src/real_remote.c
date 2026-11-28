@@ -295,6 +295,8 @@ typedef uint32_t u32;
    values unlike the stand-in's, and streams mode 0x37 reports every 6 ms: a gentle swing on the accelerometer,
    yaw going back and forth on the gyro, and the Nunchuk's stick held right. */
 static int sim_nunchuk, sim_mp_on, sim_mp_mode, sim_streaming, sim_turn;
+static DWORD sim_mp_ready_at; /* a tick count: a MotionPlus just switched on answers reads from then */
+#define SIM_MP_START_MS 400u
 static u8 sim_leds, sim_mode;
 static CRITICAL_SECTION sim_lock;
 static u8 sim_eeprom[0x40], sim_mp_off[256], sim_mp_on_regs[256], sim_ext[256];
@@ -370,6 +372,7 @@ static const u8* sim_region(u32 space, u32 address) {
     if (space == 0) return (address & 0xFFFFu) < sizeof sim_eeprom ? sim_eeprom + (address & 0xFFFFu) : NULL;
     if (device == 0xA6 && !sim_mp_on) return sim_mp_off + offset;
     if (device == 0xA4 && sim_mp_on) {
+        if ((LONG)(GetTickCount() - sim_mp_ready_at) < 0) return NULL; /* still coming up: an error, as a real one */
         u8 id[6] = {0x00, 0x00, 0xA4, 0x20, (u8)sim_mp_mode, 0x05};
         memcpy(sim_mp_on_regs + 0xFA, id, 6);
         return sim_mp_on_regs + offset;
@@ -418,6 +421,7 @@ static void sim_output(const u8* r, u32 size) {
         if (address == 0xA600FEu && !sim_mp_on) {
             sim_mp_on = 1;
             sim_mp_mode = value;
+            sim_mp_ready_at = GetTickCount() + SIM_MP_START_MS;
             sim_status();
         } else if (address == 0xA400F0u && value == 0x55 && sim_mp_on) {
             sim_mp_on = 0;

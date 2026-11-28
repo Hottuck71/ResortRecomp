@@ -254,11 +254,13 @@ static void choose_dots(const u8* r, double when, RemoteSample* s) {
     a_held = (r[2] & 0x08) != 0;
     if (motion_plus) motion_pointer_feed(r, when);
     if (s->dots[0][0] != NO_DOT) return;
-    if (fake_remote_mouse_pointer(&x, &y)) {
-        motion_pointer_place(x, y);
+    float ox = 0, oy = 0; /* the remote's own pointer: MotionPlus, or tilt while no MotionPlus data comes */
+    int own = motion_pointer_for_report(r, &ox, &oy);
+    if (fake_remote_mouse_aims(own, ox, oy) && fake_remote_mouse_pointer(&x, &y)) {
+        if (fake_remote_mouse_moving()) motion_pointer_place(x, y);
         fake_remote_dots_for(x, y, s->dots);
-    } else if (motion_plus && motion_pointer_get(&x, &y)) {
-        fake_remote_dots_for(x, y, s->dots);
+    } else if (own) {
+        fake_remote_dots_for(ox, oy, s->dots);
     } else if (motion_plus && a_pressed) {
         motion_pointer_calibrate();
         fake_remote_dots_for(0, 0, s->dots);
@@ -377,11 +379,13 @@ u32 remote_driver_take_joycon(RemoteSample* out, u32 max, s32* plug) {
         int a_pressed = (s->buttons & 0x0008u) && !joycon_a_held;
         joycon_a_held = (s->buttons & 0x0008u) != 0;
         motion_pointer_feed(r, when[i]);
-        if (fake_remote_mouse_pointer(&x, &y)) {
-            motion_pointer_place(x, y);
+        float ox = 0, oy = 0;
+        int own = motion_pointer_get(&ox, &oy);
+        if (fake_remote_mouse_aims(own, ox, oy) && fake_remote_mouse_pointer(&x, &y)) {
+            if (fake_remote_mouse_moving()) motion_pointer_place(x, y);
             fake_remote_dots_for(x, y, s->dots);
-        } else if (motion_pointer_get(&x, &y)) {
-            fake_remote_dots_for(x, y, s->dots);
+        } else if (own) {
+            fake_remote_dots_for(ox, oy, s->dots);
         } else if (a_pressed) {
             motion_pointer_calibrate();
             fake_remote_dots_for(0, 0, s->dots);

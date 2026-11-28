@@ -49,6 +49,10 @@ void fake_remote_set_calibration(u32 player, const RemoteCalibration* cal); /* b
    position if it moved in the last moment. */
 void fake_remote_dots_for(float x, float y, u16 dots[2][2]);
 int fake_remote_mouse_pointer(float* x, float* y);
+/* 1 while the mouse has player 1's pointer: from when it moves until the other pointer (other_on, at other_x and
+   other_y) moves away from where it was when the mouse stopped. */
+int fake_remote_mouse_aims(int other_on, float other_x, float other_y);
+int fake_remote_mouse_moving(void); /* moved in the last moment */
 
 u32 host_field(void); /* main.c: video fields so far */
 

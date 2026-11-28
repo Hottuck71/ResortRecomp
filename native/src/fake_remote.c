@@ -133,9 +133,16 @@ static Remote remotes[MAX_REMOTES];
 static Remote* R = remotes;
 static u32 remote_count = 1;
 static u32 ticks, log_count;
-/* With a real remote, the mouse only stands in for the pointer for a moment after it moves. */
-#define MOUSE_POINTER_MS 1500u
+/* The mouse takes player 1's pointer when it moves and keeps it, held still or not, until the other pointer (a
+   real remote's MotionPlus or tilt pointer, a Joy-Con's, or a gamepad's) moves MOUSE_HANDOVER (window units, -1 to
+   1) from where it was when the mouse stopped. A remote resting on the table then never takes it back. (It used to
+   keep it only 1.5 seconds after it moved, so a click came out hit or miss.) */
+#define MOUSE_STILL_MS 150u
+#define MOUSE_HANDOVER 0.2f
 static u32 mouse_moved_at, ir_from_remote, ir_from_mouse, ir_none;
+static volatile int mouse_has_pointer;
+static float handover_x, handover_y;
+static int handover_set;
 static float mouse_last_x, mouse_last_y, mouse_window_x, mouse_window_y;
 static u32 ir_from_motion, calibrations;
 static int enabled;
@@ -541,6 +548,7 @@ void fake_remote_live(u32 buttons, float x, float y, int pointer, float pitch, f
         mouse_window_x = x;
         mouse_window_y = y;
         mouse_moved_at = ticks ? ticks : 1u;
+        mouse_has_pointer = 1;
         mouse_last_x = x;
         mouse_last_y = y;
     }
@@ -825,11 +833,31 @@ void fake_remote_dots_for(float x, float y, u16 dots[2][2]) {
     }
 }
 
+int fake_remote_mouse_aims(int other_on, float other_x, float other_y) {
+    if (!mouse_moved_at || !mouse_has_pointer) return 0;
+    if (!other_on) {
+        handover_set = 0;
+        return 1;
+    }
+    if (!handover_set || ticks - mouse_moved_at < MOUSE_STILL_MS) { /* where the other pointer is as the mouse stops */
+        handover_x = other_x;
+        handover_y = other_y;
+        handover_set = 1;
+        return 1;
+    }
+    if (fabsf(other_x - handover_x) > MOUSE_HANDOVER || fabsf(other_y - handover_y) > MOUSE_HANDOVER) {
+        mouse_has_pointer = 0; /* the remote or pad is pointing somewhere now: it has the pointer back */
+        return 0;
+    }
+    return 1;
+}
+
+int fake_remote_mouse_moving(void) { return mouse_moved_at && ticks - mouse_moved_at < MOUSE_STILL_MS; }
+
 int fake_remote_mouse_pointer(float* x, float* y) {
-    if (!mouse_moved_at || ticks - mouse_moved_at >= MOUSE_POINTER_MS) return 0;
     *x = mouse_window_x;
     *y = mouse_window_y;
-    return 1;
+    return mouse_moved_at != 0;
 }
 
 static void send_data(void) {
@@ -1047,9 +1075,11 @@ static void add_mouse_pointer(u8* r) {
     else put_ir10(ir);
 }
 
-/* A real remote with no sensor bar in view reports no IR points. The mouse fills in then, but only for a
-   moment after it moves: a pointer held still in one place while the real remote turns would pull the
-   game's MotionPlus heading toward that spot, as it uses the pointer to correct drift. */
+/* A real remote with no sensor bar in view reports no IR points. The mouse fills in then, from when it moves until
+   the remote's own pointer moves (fake_remote_mouse_aims): a mouse pointer held still while the real remote turns
+   would pull the game's MotionPlus heading toward that spot, as it uses the pointer to correct drift. The remote's
+   own pointer is its MotionPlus one, or its tilt one while no MotionPlus data comes (Wii Party and Mario Party 9
+   leave MotionPlus off, and a plain remote has none). */
 static void add_mouse_pointer_real(u8* r, double when) {
     motion_pointer_feed(r, when);
     u8* ir = NULL;
@@ -1068,11 +1098,13 @@ static void add_mouse_pointer_real(u8* r, double when) {
     static int a_held;
     int a_pressed = (r[2] & 0x08) && !a_held;
     a_held = (r[2] & 0x08) != 0;
-    if (mouse_moved_at && ticks - mouse_moved_at < MOUSE_POINTER_MS) {
+    int motion_on = motion_pointer_for_report(r, &x, &y);
+    if (fake_remote_mouse_aims(R->ir_on && motion_on, x, y)) {
         ir_from_mouse++;
         add_mouse_pointer(r);
-        motion_pointer_place(mouse_window_x, mouse_window_y); /* the MotionPlus pointer carries on from here */
-    } else if (R->ir_on && motion_pointer_get(&x, &y)) {
+        if (fake_remote_mouse_moving())
+            motion_pointer_place(mouse_window_x, mouse_window_y); /* the MotionPlus pointer carries on from here */
+    } else if (R->ir_on && motion_on) {
         ir_from_motion++;
         put_ir_at(r, x, y);
     } else if (R->ir_on && a_pressed) {
